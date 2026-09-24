@@ -24,6 +24,25 @@ O envio MIDI funciona sem o computador. O editor é usado para configuração; s
 
 ## Começar
 
+### Conheça o editor web
+
+![Editor CAZE MIDI CTRL com conexão USB, seleção de páginas, prévia do LCD e configuração de CC Toggle](docs/images/caze-midi-web-app.png)
+
+*Captura real do editor, com um preset carregado e o Nano desconectado. O percentual de expressão mostrado é uma simulação.*
+
+| Área do editor | O que você pode fazer |
+|---|---|
+| **Controlador USB** | Conectar o Nano por Web Serial, ler a configuração, baixar um backup da EEPROM e gravar o preset completo com conferência por releitura. |
+| **Páginas e footswitches** | Selecionar uma das três páginas e um dos seis footswitches, na mesma disposição física do board. |
+| **Clique, Longo e Duplo** | Configurar separadamente os três gestos de cada footswitch, totalizando 54 ações. |
+| **Prévia do LCD** | Visualizar o label, os valores do comando e o indicador EXP antes de salvar. O slider simula a expressão; não movimenta nem lê o pedal real. |
+| **Comandos e labels** | Escolher o tipo de comando, canal, número de CC/programa, valores e um label de até 12 caracteres sem acentos. |
+| **CC Toggle e ON/OFF** | Alternar o valor ativo na prévia e exibir valores personalizados como OFF/ON, mantendo os números MIDI e os parênteses do valor ativo. |
+| **Importar / Exportar** | Levar presets JSON entre computadores ou entre localhost e o site publicado. O rascunho também fica salvo neste navegador. |
+| **Recuperação** | Repetir uma gravação interrompida usando o preset e o backup guardados antes do envio. |
+
+As alterações só chegam ao Nano ao clicar em **Salvar preset no controlador**. A calibração física da expressão é feita no menu do board; o BPM de CC42 é calculado pelas pisadas no controlador, sem telemetria ao editor.
+
 ### Firmware
 
 Instale PlatformIO e abra a raiz deste projeto:
