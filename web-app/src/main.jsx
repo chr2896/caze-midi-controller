@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { createPreset, validatePreset, commandText, types } from './preset.js';
+import { createPreset, validatePreset, commandText, types, isTapTempo } from './preset.js';
 import './style.css';
 import UsbReader from './UsbReader.jsx';
 
@@ -40,8 +40,8 @@ function App() {
       const value = Number(e.target.value); if (Number.isInteger(value) && value >= min && value <= max) update({ [key]: value });
     }}/></label>;
   }
-  const header = action.label || `${['', 'LNG ', 'DBL '][gesture]}FS ${foot + 1}`;
-  const line1 = action.label ? header.padEnd(13) + 'EXP' : header.padEnd(9) + `P${page + 1}  EXP`;
+  const header = action.label || (isTapTempo(action) ? 'TAP TEMPO' : `${['', 'LNG ', 'DBL '][gesture]}FS ${foot + 1}`);
+  const line1 = action.label || isTapTempo(action) ? header.padEnd(13) + 'EXP' : header.padEnd(9) + `P${page + 1}  EXP`;
   const line2 = commandText(action, action[`value${activeSlot}`]).slice(0, 12).padEnd(12) + `${Math.round(midi * 100 / 127)}%`.padStart(4);
   return <main>
     <header><div className="brand"><span className="logo">M</span><div>CAZE MIDI CTRL<small>CONTROLLER EDITOR</small></div></div><span className="badge">● Editor local</span></header>
@@ -51,7 +51,7 @@ function App() {
       try {
         localStorage.setItem(`${storageKey}-before-usb`, JSON.stringify(preset));
         localStorage.setItem(storageKey, JSON.stringify(next));
-        setNotice('Leitura aplicada ao rascunho. Labels preservados.');
+        setNotice('Configuração do Nano carregada no editor.');
       } catch { setNotice('Leitura aplicada, mas não foi possível salvar no navegador. Exporte o preset.'); }
     }}/>
     <div className="toolbar"><div className="tabs">{[0, 1, 2].map(p => <button key={p} aria-pressed={page === p} className={page === p ? 'selected' : ''} onClick={() => setPage(p)}>Página {p + 1}</button>)}</div><div className="files"><label className="button">Importar<input type="file" accept=".json,application/json" onChange={importFile}/></label><button onClick={exportFile}>Exportar preset ↗</button></div></div>
@@ -63,13 +63,14 @@ function App() {
       <div className="gestures">{['Clique', 'Longo', 'Duplo'].map((name, g) => <button key={name} aria-pressed={gesture === g} className={gesture === g ? 'selected' : ''} onClick={() => setGesture(g)}>{name}</button>)}</div>
       <label>Label do LCD <input placeholder={`FS ${foot + 1}`} maxLength={12} value={action.label} onChange={e => update({ label: e.target.value.replace(/[^\x20-\x7E]/g, '') })}/><small>{action.label.length}/12 · Caracteres sem acentos</small></label>
       <label>Tipo de comando<select value={action.type} onChange={e => update({ type: Number(e.target.value), ...([6, 7].includes(Number(e.target.value)) ? { value1: 0 } : {}) })}>{types.map((name, i) => <option key={name} value={i}>{name}</option>)}</select></label>
+      {isTapTempo(action) && <p className="hint">CC42: o Nano calcula BPM pelas pisadas. A prévia aguarda o tap físico; não recebe o BPM da pedaleira.</p>}
       {[1, 2, 3].includes(action.type) && <div className="fields">{number('Canal MIDI', 'channel', 16, 1)}{number(action.type === 1 ? 'Programa' : 'Número do CC', 'value1')}{action.type !== 1 && number('Valor 1', 'value2')}{action.type === 3 && number('Valor 2', 'value3')}</div>}
       {[6, 7].includes(action.type) && <label>Página de destino<select value={action.value1} onChange={e => update({ value1: Number(e.target.value) })}>{[0, 1, 2].map(p => <option key={p} value={p}>Página {p + 1}</option>)}</select></label>}
       {action.type === 3 && <>
         <label className="checkbox-label"><span><input type="checkbox" checked={action.toggleOnOff === true} onChange={e => update({ toggleOnOff: e.target.checked })}/>Exibir valores personalizados como ON/OFF</span><small>Menor valor = OFF; maior = ON. Valores iguais mantêm a exibição original. Não altera os valores MIDI.</small></label>
         <button className="toggle-preview" onClick={() => setActiveSlot(activeSlot === 2 ? 3 : 2)}>Alternar valor ativo na prévia</button>
       </>}
-      <div className="integration"><strong>Gravação no Nano — próxima etapa</strong><p>A conexão USB permite apenas leitura. Edições, labels e a opção ON/OFF continuam locais até implementarmos a gravação no firmware.</p></div>
+      <div className="integration"><strong>Pronto para o controlador</strong><p>As edições ficam no rascunho até clicar em Salvar preset no controlador. A prévia de expressão continua sendo uma simulação.</p></div>
     </section></div><p className="notice" role="status">{notice}</p><footer>ARDUINO NANO · 6 FOOTSWITCHES · 3 PÁGINAS<span>React + JavaScript</span></footer>
   </main>;
 }

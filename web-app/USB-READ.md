@@ -1,3 +1,5 @@
+> Registro da etapa anterior (firmware somente leitura). Para o firmware atual com gravação e mapa v2, siga [USB-WRITE.md](USB-WRITE.md).
+
 # Conexão USB — somente leitura
 
 1. Compile e faça upload do firmware desta pasta usando `board = nanoatmega328`. O firmware anterior não responde ao editor. Esta tarefa não faz upload automaticamente.

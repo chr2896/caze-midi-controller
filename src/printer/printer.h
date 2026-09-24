@@ -26,6 +26,7 @@ class Printer {
         void selectFootswitchPrompt();
         void configurationPrompt(ConfigurationState state, byte value, CommandType commandType);
         void commandInfo(int footswitchNo, FootswitchState click, byte lastValue);
+        void tapInfo(int footswitchNo, FootswitchState click, unsigned int bpm);
         void printConfigPage(MidiControllerConfig *config);
         void changeModeMessage(boolean inConfigurationMode);
         void usbMode(boolean enabled);

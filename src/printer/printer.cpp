@@ -194,6 +194,19 @@ void Printer::commandInfo(int footswitchNo, FootswitchState click, byte lastValu
     
 }
 
+void Printer::tapInfo(int footswitchNo, FootswitchState click, unsigned int bpm) {
+    this->clearDisplay();
+    this->lcd.setCursor(0, 0);
+    char label[13];
+    this->config->getLabel(footswitchNo, click, label);
+    if (label[0]) this->lcd.print(label);
+    else this->lcd.print(F("TAP TEMPO"));
+    this->lcd.setCursor(0, 1);
+    if (bpm) this->lcd.print(bpm);
+    else this->lcd.print(F("--"));
+    this->lcd.print(F(" BPM"));
+}
+
 void Printer::printConfigPage(MidiControllerConfig *config) {
     this->clearDisplay();
     this->lcd.setCursor(0, 0);

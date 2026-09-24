@@ -1,3 +1,5 @@
+import { storageState } from './storage-layout.js';
+
 export function encodeFrame(command, sequence, payload = []) {
   const encoded = Array.from(payload).flatMap(value => [value >> 4, value & 15]);
   const checksum = (command + sequence + Array.from(payload).reduce((sum, value) => sum + value, 0)) & 127;
@@ -35,16 +37,25 @@ export function decodeSnapshot(bytes, draft) {
   if (bytes.length !== 1024) throw Error('Leitura incompleta da EEPROM.');
   const preset = structuredClone(draft);
   const warnings = [];
+  const state = storageState(bytes);
+  if (state === 'pending') return { preset, warnings: ['Gravação incompleta: use Recuperar gravação. Nenhum comando parcial foi carregado.'], loaded: 0, state };
   let loaded = 0;
   for (let page = 0; page < 3; page++) for (let foot = 0; foot < 6; foot++) for (let gesture = 0; gesture < 3; gesture++) {
-    const address = page * 48 + foot * 5 + gesture * 90;
+    const address = page * (state === 'ready' ? 30 : 48) + foot * 5 + gesture * 90;
     const [channel, type, value1, value2, value3] = bytes.slice(address, address + 5);
     const valid = type <= 7 && channel >= 1 && channel <= 16 &&
       [value1, value2, value3].every(v => v <= 127) && (![6, 7].includes(type) || value1 < 3);
     const location = `Página ${page + 1}, FS ${foot + 1}, ${['clique', 'longo', 'duplo'][gesture]}`;
     if (!valid) { warnings.push(`${location}: dados inválidos ou não configurados; rascunho local mantido.`); continue; }
     Object.assign(preset.pages[page][foot][gesture], { channel, type, value1, value2, value3 });
+    if (state === 'ready') {
+      const index = address / 5;
+      const label = bytes.slice(270 + index * 12, 282 + index * 12);
+      if (label.some(v => v !== 0 && (v < 32 || v > 126))) warnings.push(`${location}: label inválido; label local mantido.`);
+      else preset.pages[page][foot][gesture].label = String.fromCharCode(...label.slice(0, label.includes(0) ? label.indexOf(0) : 12));
+      preset.pages[page][foot][gesture].toggleOnOff = Boolean(bytes[918 + (index >> 3)] & (1 << (index % 8)));
+    }
     loaded++;
   }
-  return { preset, warnings, loaded };
+  return { preset, warnings, loaded, state };
 }

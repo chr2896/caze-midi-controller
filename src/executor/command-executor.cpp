@@ -18,6 +18,8 @@ void CommandExecutor::init() {
 }
 
 void CommandExecutor::resetAfterConfiguration() {
+    this->tapTempo.reset();
+    this->lastWasTap = false;
     for (byte i = 0; i < TOGGLE_HISTORY_SIZE; i++) this->toggleKeys[i] = "";
     this->toggleIterator = 0;
     this->prevPage = -1;
@@ -63,6 +65,13 @@ void CommandExecutor::saveToggleHistory(int no, int page, byte value) {
 void CommandExecutor::executeCommand(int no, FootswitchState click) {
     ControllerButtonEntity entity = this->config->getButtonData(no, click);
     int page = this->config->getPage();
+
+    this->lastWasTap = (entity.type == CommandType::CC || entity.type == CommandType::TOGGLE_CC) && entity.value1 == 42;
+    if (this->lastWasTap) {
+        byte gesture = (click & FootswitchState::LONG_CLICK) ? 1 : (click & FootswitchState::DOUBLE_CLICK) ? 2 : 0;
+        uint16_t source = ((page * NUMBER_OF_FOOTSWITCHES + no) * 3 + gesture) * 16 + entity.channel;
+        this->tapTempo.tap(millis(), source);
+    }
 
     switch (entity.type) {
         case byte(CommandType::NOTE): {
@@ -136,7 +145,8 @@ void CommandExecutor::sendCommands(Footswitch* footswitches[]) {
             int goBackToPage = this->getPrevPage();
             
             this->executeCommand(no, state);
-            this->printer->commandInfo(no, state, this->getExecutedValue());
+            if (this->lastWasTap) this->printer->tapInfo(no, state, this->tapTempo.bpm());
+            else this->printer->commandInfo(no, state, this->getExecutedValue());
 
             if (goBackToPage >= 0) {
                 this->config->setPage(goBackToPage);

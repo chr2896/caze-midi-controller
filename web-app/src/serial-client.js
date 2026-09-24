@@ -1,4 +1,5 @@
 import { encodeFrame, FrameParser } from './serial-protocol.js';
+import { crc16, IMAGE_SIZE, storageState } from './storage-layout.js';
 
 export class SerialClient {
   sequence = 0;
@@ -15,7 +16,8 @@ export class SerialClient {
       // Opening a Nano serial port can reset it; wait through bootloader + LCD welcome.
       await new Promise(resolve => setTimeout(resolve, 4500));
       const info = await this.request(1);
-      if (info.join(',') !== '3,6,3,48,90,5,1') throw Error('Firmware ou formato de memória incompatível com esta versão do editor.');
+      if (info.length !== 7 || ![3, 6, 3].every((v, i) => info[i] === v) || ![30, 48].includes(info[3]) || info[4] !== 90 || info[5] !== 5 || ![1, 3].includes(info[6])) throw Error('Firmware ou formato de memória incompatível com esta versão do editor.');
+      this.canWrite = info[6] === 3;
     } catch (error) { await this.close(); throw error; }
   }
   async readLoop() {
@@ -41,7 +43,7 @@ export class SerialClient {
       }
     }
   }
-  async request(command) {
+  async request(command, payload = []) {
     if (!this.reader || !this.port?.writable) throw Error('Nano desconectado.');
     if (this.pending) throw Error('Aguarde a leitura em andamento.');
     const sequence = this.sequence = this.sequence % 127 + 1;
@@ -49,10 +51,29 @@ export class SerialClient {
       const finish = (callback, result) => { clearTimeout(timer); this.pending = null; callback(result); };
       const timer = setTimeout(() => this.pending?.reject(Error('Sem resposta. Atualize o firmware, ative USB MODE (FS4 + FS6) e feche outros programas que usam a porta.')), 5000);
       this.pending = { command, sequence, resolve: payload => finish(resolve, payload), reject: error => finish(reject, error) };
-      this.write(encodeFrame(command, sequence)).catch(error => {
+      this.write(encodeFrame(command, sequence, payload)).catch(error => {
         if (this.pending?.sequence === sequence) this.pending.reject(error);
       });
     });
+  }
+  async saveImage(image, progress = () => {}) {
+    if (!this.canWrite) throw Error('Atualize o firmware para habilitar gravação.');
+    if (image.length !== IMAGE_SIZE) throw Error('Imagem de configuração inválida.');
+    const checked = async (command, payload = []) => {
+      const reply = await this.request(command, payload);
+      if (reply[0] === 2) throw Error('Saia dos menus de configuração no Nano antes de salvar.');
+      if (reply.length !== 1 || reply[0] !== 0) throw Error('O Nano recusou a gravação. Use Recuperar gravação para repetir o envio.');
+    };
+    const crc = crc16(image);
+    await checked(3, [crc >> 8, crc & 255]);
+    for (let offset = 0; offset < image.length; offset += 16) {
+      await checked(4, [offset >> 8, offset & 255, ...image.slice(offset, offset + 16)]);
+      progress(Math.round(Math.min(offset + 16, image.length) * 100 / image.length));
+    }
+    await checked(5);
+    const verified = await this.request(2);
+    if (verified.length !== 1024 || storageState(verified) !== 'ready' || !image.every((v, i) => verified[i] === v)) throw Error('A releitura não confirmou todos os dados. Reconecte e use Recuperar gravação.');
+    return verified;
   }
   async write(bytes) {
     const writer = this.port.writable.getWriter();

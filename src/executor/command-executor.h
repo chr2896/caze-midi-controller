@@ -9,6 +9,7 @@
 #include "footswitch/footswitch-state.h"
 #include "printer/printer.h"
 #include "led/led-controller.h"
+#include "tap-tempo.h"
 
 #define TOGGLE_HISTORY_SIZE 20
 
@@ -27,6 +28,8 @@ class CommandExecutor {
         void saveToggleHistory(int no, int page, byte value);
         byte lastValue;
         int prevPage;
+        TapTempo tapTempo;
+        bool lastWasTap = false;
 
     public:
         CommandExecutor(MidiControllerConfig* config, Printer *printer, LedController *ledController);

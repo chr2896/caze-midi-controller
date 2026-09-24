@@ -21,7 +21,9 @@ export function validatePreset(data) {
   }
   return data;
 }
+export function isTapTempo(action) { return [2, 3].includes(action.type) && action.value1 === 42; }
 export function commandText(action, active) {
+  if (isTapTempo(action)) return '-- BPM';
   const value = x => {
     if (action.toggleOnOff && action.value2 !== action.value3) {
       return x === Math.min(action.value2, action.value3) ? 'OFF' : 'ON';

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createPreset, validatePreset, commandText } from './preset.js';
+import { createPreset, validatePreset, commandText, isTapTempo } from './preset.js';
 test('preset round trip preserves all 54 actions independently', () => {
   const preset = createPreset(); preset.pages[2][5][2].label = 'SOLO';
   assert.equal(validatePreset(JSON.parse(JSON.stringify(preset))).pages[2][5][2].label, 'SOLO');
@@ -16,6 +16,15 @@ test('reject invalid MIDI, pages and labels on import', () => {
 test('toggle preview preserves active parentheses and custom values', () => {
   assert.equal(commandText({ type: 3, value2: 0, value3: 127 }, 0), '(OFF) ON');
   assert.equal(commandText({ type: 3, value2: 24, value3: 96 }, 96), '24 (96)');
+});
+test('CC42 previews BPM without changing MIDI values or treating PG42 as tap', () => {
+  const action = { type: 2, value1: 42, value2: 127 };
+  assert.equal(isTapTempo(action), true);
+  assert.equal(commandText(action, 127), '-- BPM');
+  assert.equal(commandText({ ...action, type: 3, value3: 0 }, 0), '-- BPM');
+  assert.equal(isTapTempo({ ...action, type: 1 }), false);
+  assert.equal(commandText({ ...action, type: 1 }, 127), 'PG 42 127');
+  assert.deepEqual(action, { type: 2, value1: 42, value2: 127 });
 });
 test('optional ON/OFF labels preserve MIDI values and work in either order', () => {
   const action = { type: 3, value2: 24, value3: 96, toggleOnOff: true };
