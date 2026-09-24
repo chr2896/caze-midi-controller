@@ -12,6 +12,9 @@ private:
     byte minValue;
     byte maxValue;
     bool reversed;
+    int heel = 0;
+    int toe = 1023;
+    void loadCalibration();
 
 public:
     ExpressionConfig();
@@ -32,6 +35,9 @@ public:
 
     void load();
     void save();
+    int getHeel() const { return heel; }
+    int getToe() const { return toe; }
+    bool calibrate(int heelValue, int toeValue);
 };
 
 #endif

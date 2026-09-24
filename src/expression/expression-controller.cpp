@@ -33,8 +33,8 @@ void ExpressionController::update() {
     }
     int raw = sum / FILTER_SAMPLES;
 
-    // Typical expression pedals use roughly 0..5 V at the jack.
-    int value = map(raw, 0, 1023, 0, 127);
+    // Calibrated physical endpoints; defaults remain 0..1023 until calibrated.
+    int value = map(raw, this->config->getHeel(), this->config->getToe(), 0, 127);
     value = constrain(value, 0, 127);
 
     if (this->config->isReversed()) {
@@ -61,3 +61,9 @@ void ExpressionController::update() {
 }
 
 void ExpressionController::reset() { this->lastValue = -1; }
+
+int ExpressionController::readCalibrationPosition() {
+    long sum = 0;
+    for (byte i = 0; i < 32; i++) sum += analogRead(EXPRESSION_PIN);
+    return sum / 32;
+}

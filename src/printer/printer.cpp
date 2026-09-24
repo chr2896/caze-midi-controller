@@ -294,6 +294,17 @@ void Printer::clickType(FootswitchState click) {
 }
 
 void Printer::expressionPrompt(int state, byte value) {
+    if (state >= 6) {
+        this->clearDisplay();
+        this->lcd.setCursor(0, 0);
+        if (state == 6) this->lcd.print(F("EXP CALIBRATE"));
+        else if (state == 7) this->lcd.print(F("HEEL DOWN"));
+        else this->lcd.print(F("TOE DOWN"));
+        this->lcd.setCursor(0, 1);
+        if (state == 6) this->lcd.print(value ? F("YES") : F("NO"));
+        else this->lcd.print(F("FS4=SET FS1=BACK"));
+        return;
+    }
     const char* labels[] = {
         "EXP ENABLE",
         "EXP CHANNEL",

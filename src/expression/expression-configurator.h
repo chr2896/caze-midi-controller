@@ -12,7 +12,10 @@ enum ExpressionConfigState {
     EXP_SELECT_CC = 2,
     EXP_SELECT_MIN = 3,
     EXP_SELECT_MAX = 4,
-    EXP_SELECT_REVERSE = 5
+    EXP_SELECT_REVERSE = 5,
+    EXP_CALIBRATE = 6,
+    EXP_HEEL = 7,
+    EXP_TOE = 8
 };
 
 class ExpressionConfigurator {
@@ -23,6 +26,8 @@ private:
     ExpressionConfigState state;
     byte value;
     bool active;
+    int heelPosition;
+    void finish();
 
     void show();
     void next();
@@ -33,6 +38,7 @@ public:
     ExpressionConfigurator(ExpressionConfig* config, Printer* printer, ExpressionController* controller);
     void start();
     bool isActive();
+    bool isCalibrating() { return active && state >= EXP_HEEL; }
     void process(Footswitch* footswitches[]);
 };
 

@@ -9,6 +9,7 @@ const int FLAGS = 918;
 const int EXPRESSION = 928;
 const int USB = 935;
 const int IMAGE_SIZE = 936;
+const int CALIBRATION = 936; // Separate from web preset writes (0..935).
 const int MARKER = 1020;
 const byte PENDING = 0x51;
 const byte VALID = 0xA5;

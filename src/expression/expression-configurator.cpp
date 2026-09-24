@@ -28,7 +28,7 @@ void ExpressionConfigurator::show() {
 
 void ExpressionConfigurator::increment() {
     byte maxValue = 127;
-    if (this->state == EXP_SELECT_ENABLED || this->state == EXP_SELECT_REVERSE) maxValue = 1;
+    if (this->state == EXP_SELECT_ENABLED || this->state == EXP_SELECT_REVERSE || this->state == EXP_CALIBRATE) maxValue = 1;
     else if (this->state == EXP_SELECT_CHANNEL) maxValue = 16;
 
     this->value++;
@@ -37,7 +37,7 @@ void ExpressionConfigurator::increment() {
 
 void ExpressionConfigurator::decrement() {
     byte maxValue = 127;
-    if (this->state == EXP_SELECT_ENABLED || this->state == EXP_SELECT_REVERSE) maxValue = 1;
+    if (this->state == EXP_SELECT_ENABLED || this->state == EXP_SELECT_REVERSE || this->state == EXP_CALIBRATE) maxValue = 1;
     else if (this->state == EXP_SELECT_CHANNEL) maxValue = 16;
 
     if (this->value == 0) this->value = maxValue;
@@ -53,11 +53,15 @@ void ExpressionConfigurator::next() {
         case EXP_SELECT_MAX: config->setMaxValue(this->value); break;
         case EXP_SELECT_REVERSE:
             config->setReversed(this->value);
-            config->save();
-            controller->reset();
-            printer->expressionSaved();
-            active = false;
+            break;
+        case EXP_CALIBRATE:
+            if (!value) { finish(); return; }
+            state = EXP_HEEL;
+            show();
             return;
+        case EXP_HEEL:
+        case EXP_TOE:
+            return; // Captures are handled by process(), not menu increments.
     }
 
     state = static_cast<ExpressionConfigState>(state + 1);
@@ -69,8 +73,19 @@ void ExpressionConfigurator::next() {
         case EXP_SELECT_MIN: value = config->getMinValue(); break;
         case EXP_SELECT_MAX: value = config->getMaxValue(); break;
         case EXP_SELECT_REVERSE: value = config->isReversed(); break;
+        case EXP_CALIBRATE: value = 0; break;
+        case EXP_HEEL:
+        case EXP_TOE:
+            break;
     }
     show();
+}
+
+void ExpressionConfigurator::finish() {
+    config->save();
+    controller->reset();
+    printer->expressionSaved();
+    active = false;
 }
 
 void ExpressionConfigurator::process(Footswitch* footswitches[]) {
@@ -79,6 +94,28 @@ void ExpressionConfigurator::process(Footswitch* footswitches[]) {
     FootswitchState inc = footswitches[FS_CONFIG_INCREMENT]->checkClicked();
     FootswitchState dec = footswitches[FS_CONFIG_DECREMENT]->checkClicked();
     FootswitchState nextState = footswitches[FS_CONFIG_NEXT]->checkClicked();
+
+    if (isCalibrating()) {
+        if (dec & FootswitchState::ANY_CLICK) {
+            state = EXP_CALIBRATE;
+            value = 0;
+            show();
+        } else if (nextState & FootswitchState::ANY_CLICK) {
+            int position = controller->readCalibrationPosition();
+            if (state == EXP_HEEL) {
+                heelPosition = position;
+                state = EXP_TOE;
+                show();
+            } else if (config->calibrate(heelPosition, position)) {
+                finish();
+            } else {
+                printer->debug("CAL TOO SHORT");
+                state = EXP_HEEL;
+                show();
+            }
+        }
+        return;
+    }
 
     if (inc & FootswitchState::ANY_CLICK) {
         increment();

@@ -102,7 +102,7 @@ void loop() {
     }
 
     ledController.update();
-    expressionController.update();
+    if (!expressionConfigurator.isCalibrating()) expressionController.update();
 
     if (infoSwitchesPressed() || configSwitchesPressed() || usbModeSwitchesPressed() || expressionSwitchesPressed()) {
         return;

@@ -16,6 +16,7 @@ ExpressionConfig::ExpressionConfig() {
 }
 
 void ExpressionConfig::load() {
+    this->loadCalibration();
     if (Storage::pending()) { this->enabled = false; return; }
     if (EEPROM.read(Storage::expressionAddress()) != EXP_MAGIC) {
         // First boot after installing the modified firmware.
@@ -36,6 +37,39 @@ void ExpressionConfig::load() {
     this->minValue = EEPROM.read(Storage::expressionAddress() + 4);
     this->maxValue = EEPROM.read(Storage::expressionAddress() + 5);
     this->reversed = EEPROM.read(Storage::expressionAddress() + 6);
+}
+
+void ExpressionConfig::loadCalibration() {
+    heel = 0;
+    toe = 1023;
+    const int base = Storage::CALIBRATION;
+    if (EEPROM.read(base + 6) != 0xC7) return;
+    uint16_t crc = 0xFFFF;
+    for (byte i = 0; i < 4; i++) crc = Storage::crcByte(crc, EEPROM.read(base + i));
+    if (EEPROM.read(base + 4) != (crc & 255) || EEPROM.read(base + 5) != (crc >> 8)) return;
+    int storedHeel = EEPROM.read(base) | (EEPROM.read(base + 1) << 8);
+    int storedToe = EEPROM.read(base + 2) | (EEPROM.read(base + 3) << 8);
+    if (storedHeel < 0 || storedHeel > 1023 || storedToe < 0 || storedToe > 1023 || abs(storedToe - storedHeel) < 32) return;
+    heel = storedHeel;
+    toe = storedToe;
+}
+
+bool ExpressionConfig::calibrate(int heelValue, int toeValue) {
+    if (Storage::pending() || heelValue < 0 || heelValue > 1023 || toeValue < 0 || toeValue > 1023 || abs(toeValue - heelValue) < 32) return false;
+    byte values[4] = {byte(heelValue), byte(heelValue >> 8), byte(toeValue), byte(toeValue >> 8)};
+    const int base = Storage::CALIBRATION;
+    EEPROM.update(base + 6, 0); // Invalidate until all endpoints and CRC are written.
+    uint16_t crc = 0xFFFF;
+    for (byte i = 0; i < 4; i++) {
+        EEPROM.update(base + i, values[i]);
+        crc = Storage::crcByte(crc, values[i]);
+    }
+    EEPROM.update(base + 4, crc & 255);
+    EEPROM.update(base + 5, crc >> 8);
+    EEPROM.update(base + 6, 0xC7);
+    heel = heelValue;
+    toe = toeValue;
+    return true;
 }
 
 void ExpressionConfig::save() {

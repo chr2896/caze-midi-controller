@@ -17,6 +17,7 @@ public:
     void init();
     void update();
     void reset();
+    int readCalibrationPosition();
     int getLastValue() const { return this->lastValue; }
 };
 
