@@ -15,6 +15,7 @@
 #include "expression/expression-config.h"
 #include "expression/expression-controller.h"
 #include "expression/expression-configurator.h"
+#include "editor/editor-reader.h"
 
 /**
  * Open Midi Controller
@@ -50,6 +51,7 @@ ExpressionConfigurator expressionConfigurator(&expressionConfig, &printer, &expr
 Configurator configurator(&config, &configurationStateMachine, &printer);
 boolean usbModeButtonsPressed = false;
 boolean expressionButtonsPressed = false;
+boolean editorUsbMode = false;
 void(* resetFunc) (void) = 0;
 
 void setup() {
@@ -61,6 +63,7 @@ void setup() {
     printer.welcome(REVISION);
 
     boolean usbMode = config.isInUsbMidiMode();
+    editorUsbMode = usbMode;
     if (usbMode) {
         Serial.begin(115200);
     }
@@ -73,6 +76,8 @@ void setup() {
 }
 
 void loop() {
+
+    if (editorUsbMode) updateEditorReader();
 
     for (Footswitch* fs : footswitches) {
         fs->scan();
