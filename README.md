@@ -1,80 +1,99 @@
-# Open Midi Controller
-Open source firmware for 6 button midi controller based on arduino. It's fully configurable and doesn't need a computer connection. Build your own midi controller and save a lot of money. 
+# CAZE MIDI CTRL
 
-# Features
+Controlador MIDI para **Arduino Nano ATmega328P**, com seis footswitches, LCD 16×2, LEDs, pedal de expressão e editor web em React + JavaScript.
 
-Most important features:
+> Adaptação independente do [Open Midi Controller, de galczo5](https://github.com/galczo5/open-midi-controller). A autoria original e a licença recebida foram preservadas. Veja [créditos](docs/CREDITS.md).
 
-* 6 buttons, each can be assigned to three actions. The first action is triggered on footswitch click. The second one is triggered when the switch is pressed for more than 1 second. The last one is triggered on double click.
-* LCD status screen
-* Configurable without a computer connection
-* Supported midi commands: Note, CC - send one value, CC - toggle two values
-* Five "pages" of configuration. You can assign an action to footswitch and toggle between five different configurations
-* Working with USB MIDI using the serial port. You'll need to use additional software like [Hairless Midi](https://projectgus.github.io/hairless-midiserial/), [ttymidi](https://github.com/cjbarnes18/ttymidi) or [SerialMidiBridge](https://github.com/RuudMulder/SerialMidiBridge) to control your DAW or plugins. Just set port and baudrate of 115200.
+## O que ele faz
 
-It's easy to calculate that with 6 footswitches, 3 actions for each footswitch and 3 possible configuration pages allow you to configure 54 different commands! That's a lot.
+- **54 ações:** seis footswitches × três páginas × clique simples, longo e duplo.
+- Program Change, CC, CC Toggle e navegação de páginas.
+- Labels ASCII de até 12 caracteres, salvos no Nano.
+- Indicador de expressão à direita do LCD, com percentual do MIDI final.
+- Calibração de calcanhar/ponta, MIN/MAX, canal, CC e REVERSE.
+- Tap tempo local para CC42: média dos últimos quatro intervalos.
+- Editor com prévia do LCD, presets JSON, Web Serial, leitura e gravação verificada.
+- Backup antes da gravação e recuperação após envio interrompido.
 
-# Build cost
-Cost of parts if you decide to order them in the popular Chinese store.
+```text
+TAP TEMPO    EXP
+120 BPM      75%
+```
 
-| Part | Cost |
-| ---- | ---- |
-| Arduino Nano | 2 - 3 USD |
-| Arduino Nano Shield (if you don't want to solder) | 1 USD |
-| LCD with I2C module | 2 - 2.5 USD |
-| Momentary Footswitches | 6 x 1 - 1.5 USD |
-| DIN 5 and other stuff | 1 USD |
-| TOTAL | 12 - 16.5 USD  |
+O envio MIDI funciona sem o computador. O editor é usado para configuração; seu controle de expressão é uma simulação, não telemetria do board.
 
-*You have to add the cost of the case and soldering supplies. I'm using a case described as T25. It costs about 8 USD. You can make the case of almost anything.*
+## Começar
 
-# Branches
+### Firmware
 
-The idea is to keep in the main branch only the code that don't need any hardware changes. So once you build your own device, you won't need to change it. Adding mods to hardware is possible using other branches. 
+Instale PlatformIO e abra a raiz deste projeto:
 
-So features like:
-* 10 switches
-* additional jack outputs for expression pedals
-* led status diodes
+```sh
+pio run -e nanoatmega328
+pio run -e nanoatmega328 -t upload
+```
 
-are possible and can be implemented, but they will never be part of the main branch. 
+A placa testada usa **`board = nanoatmega328`**. Desconecte o editor/monitor serial antes do upload. Após migrar os presets para o mapa v2, não instale o firmware antigo diretamente: ele interpreta os endereços de outra forma.
 
-I want to keep the device easy and cheap to build but still highly moddable.
+### Editor local
 
-# Build instruction
+Requer Node.js 22 e npm:
 
-FAQ:
+```sh
+cd web-app
+npm ci
+npm run dev
+```
 
-* **Do I need to know how to solder?** - A little bit. If you can solder two wires together, you have the necessary skills. 
-* **Do I need to know C++?** - No
-* **Is it hard to create my own controller?** - Relatively easy
+Abra o endereço mostrado pelo Vite. Para conferir o app:
 
-See [BUILD](./BUILD.md).
+```sh
+npm test
+npm run build
+```
 
-*Remember to follow the build instructions. I cannot get the responsibility if you mess something up. Everything you do, you do on your own responsibility. I just provided a free firmware for your device.*
+### Editor online
 
-# Manual
+É possível publicar o app no Netlify, sem depender de localhost. A configuração está em `netlify.toml`; siga [publicação por HTTPS](docs/DEPLOY.md). Ainda será necessário conectar o Nano por USB ao computador e autorizar a porta no navegador.
 
-See [MANUAL](./MANUAL.md).
+## Usar com o Nano
 
-# Feature requests
+1. Instale o firmware atual.
+2. Ative **USB MODE com FS4 + FS6** e saia dos menus físicos.
+3. No editor, conecte a porta do Nano e clique em **Ler controlador**.
+4. Baixe o backup e carregue a leitura antes de editar, se quiser preservar os comandos existentes.
+5. Edite o preset e clique em **Salvar preset no controlador**. Isso grava as 54 ações, não apenas o footswitch selecionado.
+6. Aguarde a confirmação pela releitura. Os labels funcionam mesmo após desligar o computador.
 
-Leave me an issue on github. It's highly possible that I will implement it.
+O modo USB usa serial a 115200 baud; o modo MIDI DIN usa 31250. O Nano com CH340 não se torna um dispositivo USB MIDI nativo. Para usar DIN, volte ao modo MIDI com a combinação existente.
 
-# Changelog
+## Guias
 
-See [CHANGELOG](./CHANGELOG.md).
+| Assunto | Documento |
+|---|---|
+| Hardware e pinagem atual | [BUILD.md](BUILD.md) |
+| Menus, footswitches e uso | [MANUAL.md](MANUAL.md) |
+| Upload | [UPLOADING.md](UPLOADING.md) |
+| Gravação, EEPROM e recuperação | [USB-WRITE.md](web-app/USB-WRITE.md) |
+| Calibração da expressão | [EXPRESSION-CALIBRATION.md](EXPRESSION-CALIBRATION.md) |
+| Tap tempo | [TAP-TEMPO.md](TAP-TEMPO.md) |
+| Hospedagem gratuita/HTTPS | [DEPLOY.md](docs/DEPLOY.md) |
+| Evolução por etapa | [CHANGELOG.md](CHANGELOG.md) |
+| ZIPs e reconstrução Git | [HISTORY.md](docs/HISTORY.md) |
+| Origem e licença | [CREDITS.md](docs/CREDITS.md), [LICENSE.txt](LICENSE.txt) |
 
-# Build photos
+## Estado e limites
 
-Send me your build photos. I will post it here :)
+Firmware e editor foram desenvolvidos e testados incrementalmente no board do projeto. O usuário confirmou o funcionamento da gravação, labels e tap tempo. A compilação não substitui testes na sua montagem; o comportamento elétrico depende do pedal, cabo e jack.
 
-My build:
+- Não há leitura do BPM interno da pedaleira: o número é calculado pelas pisadas.
+- Os rascunhos e recuperação ficam no navegador; exporte-os antes de trocar de domínio/computador.
+- A gravação não tem segunda cópia completa na EEPROM. Se interrompida, o Nano aguarda recuperação por USB.
+- O mapa legado tinha sobreposições; dados já sobrescritos nele não podem ser reconstruídos automaticamente.
+- O projeto não implementa uma entrada MIDI para sincronismo externo.
 
-![photo_1](./photos/galczo5_1.jpg)
+## Créditos e licença
 
-![photo_2](./photos/galczo5_2.jpg)
+Projeto original: **[galczo5/open-midi-controller](https://github.com/galczo5/open-midi-controller)**. Adaptação CAZE e testes: **Carlos Henrique (CAZE)**, com assistência de desenvolvimento do Codex. O arquivo MIT [LICENSE.txt](LICENSE.txt), incluindo o aviso de Francois Best presente na base, foi mantido intacto. Bibliotecas mantêm suas próprias licenças.
 
-## Modified hardware version
-
-This fork adds six LED indicators via a 74HC595 and a configurable expression pedal input on A0. See [BUILD](./BUILD.md) for wiring and configuration.
+Os documentos herdados estão em `docs/*-inherited.md`; as fotos da base são do projeto herdado, não desta montagem.

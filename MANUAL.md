@@ -1,45 +1,32 @@
-# Manual
+# Manual CAZE MIDI CTRL
 
-This document contains how to use and configure the controller.
+## Footswitches
 
-## Footswitch map
+São três páginas e seis footswitches por página. Cada um tem ações de clique simples, longo e duplo. No menu de comandos, PG significa Program Change (o enum histórico no código se chama NOTE).
 
-![map](./photos/map.png)
+| Combinação | Função |
+|---|---|
+| FS2 + FS4 | Entrar/sair da configuração dos footswitches |
+| FS1 + FS3 | Mostrar configuração |
+| FS4 + FS6 | Alternar USB/MIDI e reiniciar |
+| FS5 + FS6 | Menu de expressão |
 
-## Enter configuration mode
+Nos menus, FS1 diminui, FS2 aumenta e FS4 avança/confirma. No menu de expressão, a calibração aparece depois de REVERSE. Consulte o [guia de calibração](EXPRESSION-CALIBRATION.md).
 
-Press both FS2 and FS4 footswitches. LCD should display information that you are in the configuration mode.
+## LCD e LEDs
 
-## Configuration
+A primeira linha mostra o label de até 12 caracteres, ou a identificação FS/página quando não há label. EXP usa as três últimas colunas; o percentual ocupa até quatro caracteres na segunda linha. Expressão desativada aparece como OFF.
 
-First of all, you have to select the footswitch that you want to configure. Press the footswitch you want to configure. If you want to configure the long press, you should press it for more than 1 second. If you want to configure the double click, you should press it twice in short period of time.
+CC Toggle mostra os dois valores e coloca parênteses no ativo. 0/127 aparecem como OFF/ON. A opção do editor aplica OFF ao menor valor e ON ao maior para outros pares, sem mudar os números MIDI enviados. Valores iguais mantêm a apresentação original.
 
-Next, you have to set MIDI channel.
+No comportamento atual dos LEDs, CC comum fica aceso depois de acionado; Toggle usa o primeiro valor configurado como estado aceso. A opção visual ON/OFF do LCD não altera essa lógica.
 
-**Use FS1 and FS2 to change value**
+CC42 exibe o [tap tempo](TAP-TEMPO.md) calculado localmente. A primeira pisada mostra -- BPM e as seguintes usam a média dos últimos quatro intervalos. Uma pausa maior que três segundos reinicia a sequência no próximo tap.
 
-**Use FS4 to submit selected value**
+## Editor e persistência
 
-After that, you have to configure command type that will be assigned to the footswitch.
+[Guia de leitura/gravação](web-app/USB-WRITE.md). As edições no editor são rascunhos até Salvar preset no controlador. A gravação inclui as 54 ações, labels e ON/OFF. Os ajustes atuais da expressão são preservados; sua calibração fica numa região independente.
 
-Available commands:
-* Note - send MIDI note 
-* CC - send MIDI CC
-* Toggle CC - Toggle two values of one CC
-* Next page - go to next configuration page
-* Prev page - go to the previous configuration page
-* Go to page - go to the selected page
-* Temporary page - go to page and go back after next command
+Se o envio for interrompido, use Recuperar gravação. Guarde o JSON de backup baixado antes do envio. Não volte ao firmware legado após migrar sem um procedimento de restauração da EEPROM.
 
-Pass the rest of the configuration using FS1, FS2 and FS4.
-
-## Exit configuration mode
-
-Press both FS2 and FS4 footswitches. LCD should display information that you are not in the configuration mode.
-
-## Display current configuration
-
-Press both FS1 and FS3 footswitches.
-
-## USB MIDI mode
-To enter USB MIDI mode, push both FS4 and FS6. The device should restart in USB MIDI mode. To go back to MIDI mode, push both FS4 and FS6.
+Veja também o [manual herdado](docs/MANUAL-inherited.md), mantido para referência histórica, que pode divergir desta adaptação.
