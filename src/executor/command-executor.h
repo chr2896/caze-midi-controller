@@ -36,6 +36,7 @@ class CommandExecutor {
         byte getExecutedValue();
         int getPrevPage();
         void syncPageLeds();
+        void resetAfterConfiguration();
 };
 
 #endif

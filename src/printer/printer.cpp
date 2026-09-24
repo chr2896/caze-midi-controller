@@ -151,9 +151,14 @@ void Printer::commandInfo(int footswitchNo, FootswitchState click, byte lastValu
 
     this->clearDisplay();
     this->lcd.setCursor(0, 0);
-    this->lcd.print(footswitchStateToTwoLetters(click) + "FS " + String(footswitchNo + 1));
-    this->lcd.setCursor(9, 0);
-    this->lcd.print("P" + String(page + 1));
+    char label[13];
+    this->config->getLabel(footswitchNo, click, label);
+    if (label[0]) this->lcd.print(label);
+    else {
+        this->lcd.print(footswitchStateToTwoLetters(click) + "FS " + String(footswitchNo + 1));
+        this->lcd.setCursor(9, 0);
+        this->lcd.print("P" + String(page + 1));
+    }
     this->lcd.setCursor(0, 1);
 
     if (btn.type == CommandType::CC) {
@@ -162,9 +167,11 @@ void Printer::commandInfo(int footswitchNo, FootswitchState click, byte lastValu
         this->lcd.print(' ');
         this->lcd.print(btn.value2);
     } else if (btn.type == CommandType::TOGGLE_CC) {
-        this->toggleValue(btn.value2, lastValue);
+        bool customOnOff = this->config->useOnOff(footswitchNo, click) && btn.value2 != btn.value3;
+        byte offValue = min(btn.value2, btn.value3);
+        this->toggleValue(btn.value2, lastValue, customOnOff, offValue);
         this->lcd.print(' ');
-        this->toggleValue(btn.value3, lastValue);
+        this->toggleValue(btn.value3, lastValue, customOnOff, offValue);
     } else if (
         btn.type == CommandType::PAGE || 
         btn.type == CommandType::NEXT_PAGE || 
@@ -325,9 +332,18 @@ void Printer::clearDisplay() {
     this->displayedExpression = -3;
 }
 
-void Printer::toggleValue(byte value, byte activeValue) {
+void Printer::editorRecovery() {
+    this->clearDisplay();
+    this->lcd.setCursor(0, 0);
+    this->lcd.print(F("USB CONFIG"));
+    this->lcd.setCursor(0, 1);
+    this->lcd.print(F("USE WEB APP"));
+}
+
+void Printer::toggleValue(byte value, byte activeValue, bool customOnOff, byte offValue) {
     if (value == activeValue) this->lcd.print('(');
-    if (value == 0) this->lcd.print(F("OFF"));
+    if (customOnOff) this->lcd.print(value == offValue ? F("OFF") : F("ON"));
+    else if (value == 0) this->lcd.print(F("OFF"));
     else if (value == 127) this->lcd.print(F("ON"));
     else this->lcd.print(value);
     if (value == activeValue) this->lcd.print(')');

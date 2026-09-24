@@ -17,6 +17,14 @@ void CommandExecutor::init() {
     MIDI.begin();
 }
 
+void CommandExecutor::resetAfterConfiguration() {
+    for (byte i = 0; i < TOGGLE_HISTORY_SIZE; i++) this->toggleKeys[i] = "";
+    this->toggleIterator = 0;
+    this->prevPage = -1;
+    this->lastValue = 0;
+    this->ledController->allOff();
+}
+
 int CommandExecutor::getLastValue(int no, int page) {
     String key = this->composeKey(no, page);
     int keyIndex = -1;

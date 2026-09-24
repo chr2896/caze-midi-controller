@@ -21,8 +21,8 @@ class MidiControllerConfig {
 private:
   const int MAX_PAGES = PAGE_NO;
 
-  byte storedData[BUFFER_SIZE];
   int page;
+  int buttonAddress(int no, FootswitchState click);
 
 public:
   MidiControllerConfig();
@@ -32,6 +32,8 @@ public:
   
   ControllerButtonEntity getButtonData(int no, FootswitchState click);
   void setButton(int no, ControllerButtonEntity button, FootswitchState click);
+  void getLabel(int no, FootswitchState click, char *label);
+  bool useOnOff(int no, FootswitchState click);
   
 
   bool isInUsbMidiMode();

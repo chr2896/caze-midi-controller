@@ -15,7 +15,7 @@ class Printer {
         MidiControllerConfig *config;
         int displayedExpression = -3;
         void clearDisplay();
-        void toggleValue(byte value, byte activeValue);
+        void toggleValue(byte value, byte activeValue, bool customOnOff = false, byte offValue = 0);
 
     public:
         Printer(MidiControllerConfig *config);
@@ -34,6 +34,7 @@ class Printer {
         void expressionPrompt(int state, byte value);
         void expressionSaved();
         void expressionStatus(bool enabled, int midiValue);
+        void editorRecovery();
 };
 
 #endif

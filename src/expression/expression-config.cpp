@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 #include "expression-config.h"
+#include "config/storage-layout.h"
 
 #define EXP_MAGIC 0xA5
 
@@ -15,7 +16,8 @@ ExpressionConfig::ExpressionConfig() {
 }
 
 void ExpressionConfig::load() {
-    if (EEPROM.read(EXP_EEPROM_ADDR) != EXP_MAGIC) {
+    if (Storage::pending()) { this->enabled = false; return; }
+    if (EEPROM.read(Storage::expressionAddress()) != EXP_MAGIC) {
         // First boot after installing the modified firmware.
         // Keep expression disabled until the user enables/configures it.
         this->enabled = false;
@@ -28,22 +30,23 @@ void ExpressionConfig::load() {
         return;
     }
 
-    this->enabled = EEPROM.read(EXP_EEPROM_ADDR + 1);
-    this->channel = EEPROM.read(EXP_EEPROM_ADDR + 2);
-    this->cc = EEPROM.read(EXP_EEPROM_ADDR + 3);
-    this->minValue = EEPROM.read(EXP_EEPROM_ADDR + 4);
-    this->maxValue = EEPROM.read(EXP_EEPROM_ADDR + 5);
-    this->reversed = EEPROM.read(EXP_EEPROM_ADDR + 6);
+    this->enabled = EEPROM.read(Storage::expressionAddress() + 1);
+    this->channel = EEPROM.read(Storage::expressionAddress() + 2);
+    this->cc = EEPROM.read(Storage::expressionAddress() + 3);
+    this->minValue = EEPROM.read(Storage::expressionAddress() + 4);
+    this->maxValue = EEPROM.read(Storage::expressionAddress() + 5);
+    this->reversed = EEPROM.read(Storage::expressionAddress() + 6);
 }
 
 void ExpressionConfig::save() {
-    EEPROM.update(EXP_EEPROM_ADDR, EXP_MAGIC);
-    EEPROM.update(EXP_EEPROM_ADDR + 1, this->enabled ? 1 : 0);
-    EEPROM.update(EXP_EEPROM_ADDR + 2, this->channel);
-    EEPROM.update(EXP_EEPROM_ADDR + 3, this->cc);
-    EEPROM.update(EXP_EEPROM_ADDR + 4, this->minValue);
-    EEPROM.update(EXP_EEPROM_ADDR + 5, this->maxValue);
-    EEPROM.update(EXP_EEPROM_ADDR + 6, this->reversed ? 1 : 0);
+    if (Storage::pending()) return;
+    EEPROM.update(Storage::expressionAddress(), EXP_MAGIC);
+    EEPROM.update(Storage::expressionAddress() + 1, this->enabled ? 1 : 0);
+    EEPROM.update(Storage::expressionAddress() + 2, this->channel);
+    EEPROM.update(Storage::expressionAddress() + 3, this->cc);
+    EEPROM.update(Storage::expressionAddress() + 4, this->minValue);
+    EEPROM.update(Storage::expressionAddress() + 5, this->maxValue);
+    EEPROM.update(Storage::expressionAddress() + 6, this->reversed ? 1 : 0);
 }
 
 bool ExpressionConfig::isEnabled() { return this->enabled; }

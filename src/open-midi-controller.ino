@@ -52,6 +52,7 @@ Configurator configurator(&config, &configurationStateMachine, &printer);
 boolean usbModeButtonsPressed = false;
 boolean expressionButtonsPressed = false;
 boolean editorUsbMode = false;
+boolean editorPendingScreen = false;
 void(* resetFunc) (void) = 0;
 
 void setup() {
@@ -77,7 +78,24 @@ void setup() {
 
 void loop() {
 
-    if (editorUsbMode) updateEditorReader();
+    if (editorUsbMode) updateEditorReader(controllerStateMachine.getState() == ControllerState::SEND_COMMAND && !expressionConfigurator.isActive());
+    if (editorStoragePending()) {
+        if (!editorPendingScreen) {
+            printer.editorRecovery();
+            ledController.allOff();
+            editorPendingScreen = true;
+        }
+        return;
+    }
+    editorPendingScreen = false;
+    if (editorTakeSaved()) {
+        expressionConfig.load();
+        expressionController.reset();
+        commandExecutor.resetAfterConfiguration();
+        config.setPage(0);
+        configurationStateMachine.reset();
+        controllerStateMachine.enterState(ControllerState::SEND_COMMAND);
+    }
 
     for (Footswitch* fs : footswitches) {
         fs->scan();

@@ -1,7 +1,9 @@
 #ifndef EDITOR_READER_H
 #define EDITOR_READER_H
 
-// Read-only USB editor protocol. No EEPROM writes or controller state changes.
-void updateEditorReader();
+// USB editor protocol: snapshots and checked, sequential configuration writes.
+void updateEditorReader(bool allowWrites);
+bool editorStoragePending();
+bool editorTakeSaved();
 
 #endif
