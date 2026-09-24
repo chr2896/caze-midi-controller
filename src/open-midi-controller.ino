@@ -105,6 +105,7 @@ void loop() {
 
         case ControllerState::SEND_COMMAND:
             commandExecutor.sendCommands(footswitches);
+            printer.expressionStatus(expressionConfig.isEnabled(), expressionController.getLastValue());
             break;
     }
 

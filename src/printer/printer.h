@@ -13,6 +13,9 @@ class Printer {
         String valueToCommandTypeLabel(byte value);
         LiquidCrystal_I2C lcd;
         MidiControllerConfig *config;
+        int displayedExpression = -3;
+        void clearDisplay();
+        void toggleValue(byte value, byte activeValue);
 
     public:
         Printer(MidiControllerConfig *config);
@@ -30,6 +33,7 @@ class Printer {
         void clickType(FootswitchState click);
         void expressionPrompt(int state, byte value);
         void expressionSaved();
+        void expressionStatus(bool enabled, int midiValue);
 };
 
 #endif

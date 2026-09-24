@@ -8,7 +8,7 @@
 
 #define MESSAGE_TIMEOUT 1500
 
-Printer::Printer(MidiControllerConfig *config) : lcd(0x27, 20, 4) {
+Printer::Printer(MidiControllerConfig *config) : lcd(0x27, 16, 2) {
     this->config = config;
 }
 
@@ -23,7 +23,7 @@ void Printer::welcome(String revision) {
     this->lcd.setCursor(0, 1);
     this->lcd.print("REV. " + revision);
     delay(MESSAGE_TIMEOUT);
-    this->lcd.clear();
+    this->clearDisplay();
     this->lcd.setCursor(0, 0);
     this->lcd.print("PRESS ANY");
     this->lcd.setCursor(0, 1);
@@ -31,29 +31,29 @@ void Printer::welcome(String revision) {
 }
 
 void Printer::enterConfiguration() {
-    this->lcd.clear();
+    this->clearDisplay();
     this->lcd.setCursor(0, 0);
     this->lcd.print("MIDI CONTROLLER");
     this->lcd.setCursor(0, 1);
     this->lcd.print("CONFIGURATION");
     delay(MESSAGE_TIMEOUT);
-    this->lcd.clear();
+    this->clearDisplay();
 
     this->selectFootswitchPrompt();
 }
 
 void Printer::leaveConfiguration() {
-    this->lcd.clear();
+    this->clearDisplay();
     this->lcd.setCursor(0, 0);
     this->lcd.print("MIDI CONTROLLER");
     this->lcd.setCursor(0, 1);
     this->lcd.print("SAVED");
     delay(MESSAGE_TIMEOUT);
-    this->lcd.clear();
+    this->clearDisplay();
 }
 
 void Printer::selectFootswitchPrompt() {
-    this->lcd.clear();
+    this->clearDisplay();
     this->lcd.setCursor(0, 0);
     this->lcd.print("SELECT");
     this->lcd.setCursor(0, 1);
@@ -97,7 +97,7 @@ void Printer::configurationPrompt(ConfigurationState state, byte value, CommandT
         line2 = "STATE: " + String(state);
     }
 
-    this->lcd.clear();
+    this->clearDisplay();
     this->lcd.setCursor(0, 0);
     this->lcd.print(line1);
     this->lcd.setCursor(0, 1);
@@ -134,11 +134,11 @@ String footswitchStateToTwoLetters(FootswitchState click) {
     }
 
     if (click & FootswitchState::LONG_CLICK) {
-        return "LONG ";
+        return "LNG ";
     }
 
     if (click & FootswitchState::DOUBLE_CLICK) {
-        return "DOUBLE ";
+        return "DBL ";
     }
 
     return "";
@@ -149,10 +149,10 @@ void Printer::commandInfo(int footswitchNo, FootswitchState click, byte lastValu
     ControllerButtonEntity btn = this->config->getButtonData(footswitchNo, click);
     int page = this->config->getPage();
 
-    this->lcd.clear();
+    this->clearDisplay();
     this->lcd.setCursor(0, 0);
     this->lcd.print(footswitchStateToTwoLetters(click) + "FS " + String(footswitchNo + 1));
-    this->lcd.setCursor(14, 0);
+    this->lcd.setCursor(9, 0);
     this->lcd.print("P" + String(page + 1));
     this->lcd.setCursor(0, 1);
 
@@ -162,16 +162,9 @@ void Printer::commandInfo(int footswitchNo, FootswitchState click, byte lastValu
         this->lcd.print(' ');
         this->lcd.print(btn.value2);
     } else if (btn.type == CommandType::TOGGLE_CC) {
-        this->lcd.print(F("CC "));
-        this->lcd.print(btn.value1);
+        this->toggleValue(btn.value2, lastValue);
         this->lcd.print(' ');
-        if (btn.value2 == lastValue) this->lcd.print('(');
-        this->lcd.print(btn.value2);
-        if (btn.value2 == lastValue) this->lcd.print(')');
-        this->lcd.print(' ');
-        if (btn.value3 == lastValue) this->lcd.print('(');
-        this->lcd.print(btn.value3);
-        if (btn.value3 == lastValue) this->lcd.print(')');
+        this->toggleValue(btn.value3, lastValue);
     } else if (
         btn.type == CommandType::PAGE || 
         btn.type == CommandType::NEXT_PAGE || 
@@ -195,7 +188,7 @@ void Printer::commandInfo(int footswitchNo, FootswitchState click, byte lastValu
 }
 
 void Printer::printConfigPage(MidiControllerConfig *config) {
-    this->lcd.clear();
+    this->clearDisplay();
     this->lcd.setCursor(0, 0);
     this->lcd.print("CURRENT");
     this->lcd.setCursor(0, 1);
@@ -203,12 +196,12 @@ void Printer::printConfigPage(MidiControllerConfig *config) {
     delay(MESSAGE_TIMEOUT);
 
     for (int i = 0; i < BUTTON_NO; i++) {
-        this->lcd.clear();
+        this->clearDisplay();
         this->commandInfo(i, FootswitchState::CLICK, 0);
         delay(MESSAGE_TIMEOUT);
     }
 
-    this->lcd.clear();
+    this->clearDisplay();
     this->lcd.setCursor(0, 0);
     this->lcd.print("LONG CLICK");
     this->lcd.setCursor(0, 1);
@@ -216,12 +209,12 @@ void Printer::printConfigPage(MidiControllerConfig *config) {
     delay(MESSAGE_TIMEOUT);
 
     for (int i = 0; i < BUTTON_NO; i++) {
-        this->lcd.clear();
+        this->clearDisplay();
         this->commandInfo(i, FootswitchState::LONG_CLICK, 0);
         delay(MESSAGE_TIMEOUT);
     }
 
-    this->lcd.clear();
+    this->clearDisplay();
     this->lcd.setCursor(0, 0);
     this->lcd.print("DOUBLE CLICK");
     this->lcd.setCursor(0, 1);
@@ -229,12 +222,12 @@ void Printer::printConfigPage(MidiControllerConfig *config) {
     delay(MESSAGE_TIMEOUT);
 
     for (int i = 0; i < BUTTON_NO; i++) {
-        this->lcd.clear();
+        this->clearDisplay();
         this->commandInfo(i, FootswitchState::DOUBLE_CLICK, 0);
         delay(MESSAGE_TIMEOUT);
     }
 
-    this->lcd.clear();
+    this->clearDisplay();
 }
 
 void Printer::changeModeMessage(boolean inConfigurationMode) {
@@ -247,13 +240,13 @@ void Printer::changeModeMessage(boolean inConfigurationMode) {
 
 void Printer::usbMode(boolean enabled) {
     if (enabled) {
-        this->lcd.clear();
+        this->clearDisplay();
         this->lcd.setCursor(0, 0);
         this->lcd.print("USB MODE");
         this->lcd.setCursor(0, 1);
         this->lcd.print("ENABLED");
     } else {
-        this->lcd.clear();
+        this->clearDisplay();
         this->lcd.setCursor(0, 0);
         this->lcd.print("MIDI MODE");
         this->lcd.setCursor(0, 1);
@@ -261,19 +254,19 @@ void Printer::usbMode(boolean enabled) {
     }
 
     delay(MESSAGE_TIMEOUT);
-    this->lcd.clear();
+    this->clearDisplay();
 }
 
 void Printer::debug(String txt) {
-    this->lcd.clear();
+    this->clearDisplay();
     this->lcd.setCursor(0, 0);
     this->lcd.print(txt);
     delay(500);
-    this->lcd.clear();
+    this->clearDisplay();
 }
 
 void Printer::clickType(FootswitchState click) {
-    this->lcd.clear();
+    this->clearDisplay();
     this->lcd.setCursor(0, 0);
 
     if (click & FootswitchState::CLICK) {
@@ -289,7 +282,7 @@ void Printer::clickType(FootswitchState click) {
     }
 
     delay(MESSAGE_TIMEOUT);
-    this->lcd.clear();
+    this->clearDisplay();
     
 }
 
@@ -303,7 +296,7 @@ void Printer::expressionPrompt(int state, byte value) {
         "EXP REVERSE"
     };
 
-    this->lcd.clear();
+    this->clearDisplay();
     this->lcd.setCursor(0, 0);
     this->lcd.print(labels[state]);
 
@@ -314,16 +307,47 @@ void Printer::expressionPrompt(int state, byte value) {
         this->lcd.print(String(value));
     }
 
-    this->lcd.setCursor(0, 3);
-    this->lcd.print("FS1-/FS2+ FS4=NEXT");
+    // The 16x2 display has no fourth row for the button hint.
 }
 
 void Printer::expressionSaved() {
-    this->lcd.clear();
+    this->clearDisplay();
     this->lcd.setCursor(0, 0);
     this->lcd.print("EXPRESSION");
     this->lcd.setCursor(0, 1);
     this->lcd.print("SAVED");
     delay(MESSAGE_TIMEOUT);
+    this->clearDisplay();
+}
+
+void Printer::clearDisplay() {
     this->lcd.clear();
+    this->displayedExpression = -3;
+}
+
+void Printer::toggleValue(byte value, byte activeValue) {
+    if (value == activeValue) this->lcd.print('(');
+    if (value == 0) this->lcd.print(F("OFF"));
+    else if (value == 127) this->lcd.print(F("ON"));
+    else this->lcd.print(value);
+    if (value == activeValue) this->lcd.print(')');
+}
+
+void Printer::expressionStatus(bool enabled, int midiValue) {
+    // Use the last transmitted MIDI value, including MIN/MAX and REVERSE.
+    int percent = !enabled ? -2 : (midiValue < 0 ? -1 : (midiValue * 100 + 63) / 127);
+    if (percent == this->displayedExpression) return;
+
+    this->lcd.setCursor(13, 0);
+    this->lcd.print(F("EXP"));
+    this->lcd.setCursor(12, 1);
+    if (percent == -2) this->lcd.print(F(" OFF"));
+    else if (percent == -1) this->lcd.print(F(" --%"));
+    else {
+        if (percent < 100) this->lcd.print(' ');
+        if (percent < 10) this->lcd.print(' ');
+        this->lcd.print(percent);
+        this->lcd.print('%');
+    }
+    this->displayedExpression = percent;
 }
