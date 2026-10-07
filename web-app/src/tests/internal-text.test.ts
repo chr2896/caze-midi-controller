@@ -7,6 +7,7 @@ import { quadCommands, quadPatch } from '../domain/quad-library';
 import { decodeSnapshot } from '../domain/serial-protocol';
 import { buildImage, imageAddress } from '../domain/storage-layout';
 import { SerialClient } from '../services/serial-client';
+import { legacySnapshot } from './helpers';
 
 function findCommand(cc: number) {
   const command = quadCommands.find((c) => c.cc === cc);
@@ -23,10 +24,10 @@ const snapshot = (image: Uint8Array) => {
   image.forEach((v, i) => {
     bytes[imageAddress(i)] = v;
   });
-  bytes.splice(1020, 4, 67, 90, 2, 165);
+  bytes.splice(1020, 4, 67, 90, 3, 165);
   return bytes;
 };
-test('54 packed actions round-trip labels, states, channels, flags and tap policies without touching calibration', () => {
+test('45 packed actions round-trip labels, states, channels, flags and tap policies without touching calibration', () => {
   const preset = createPreset();
   orderedActions(preset).forEach((a, i) => {
     Object.assign(a, {
@@ -44,19 +45,20 @@ test('54 packed actions round-trip labels, states, channels, flags and tap polic
   assert.deepEqual(bytes.slice(936, 943), before().slice(936, 943));
   const decoded = decodeSnapshot(bytes, createPreset());
   assert.deepEqual(decoded.warnings, []);
-  assert.equal(decoded.loaded, 54);
+  assert.equal(decoded.loaded, 45);
   assert.deepEqual(decoded.preset, preset);
 });
-test('540 character packed boundary succeeds, 541 and invalid state text fail', () => {
+test('603 character packed boundary succeeds, 604 and invalid state text fail', () => {
   const preset = createPreset();
   for (const a of orderedActions(preset)) {
-    a.label = '123456789';
-    a.state1 = 'A';
+    a.label = '123456789012';
   }
-  assert.equal(internalTextUsage(preset), 540);
+  for (const a of orderedActions(preset).slice(0, 6)) a.state1 = '1234567890';
+  preset.pages[0][0][0].state2 = '123';
+  assert.equal(internalTextUsage(preset), 603);
   assert.doesNotThrow(() => buildImage(preset, before()));
-  preset.pages[0][0][0].state2 = 'B';
-  assert.throws(() => validatePreset(preset), /540/);
+  preset.pages[0][0][0].state2 += 'B';
+  assert.throws(() => validatePreset(preset), /603/);
   preset.pages[0][0][0].state2 = 'é';
   assert.throws(() => validatePreset(preset), /inválidos/);
 });
@@ -65,9 +67,9 @@ test('invalid packed lengths and ASCII never replace the local draft', () => {
   preset.pages[0][0][0].state1 = 'ON';
   const image = buildImage(preset, before());
   for (const [address, value] of [
-    [270, 255],
-    [271, 48],
-    [378, 255],
+    [225, 255],
+    [226, 48],
+    [315, 255],
   ]) {
     const bytes = snapshot(image);
     bytes[address] = value;
@@ -83,7 +85,7 @@ test('old-format reading clears stale custom states and explicit tap metadata', 
   Object.assign(draft.pages[0][0][0], { state1: 'A', state2: 'B', tapTempo: true });
   assert.deepEqual(decodeSnapshot(snapshot(buildImage(preset, before())), draft).preset, preset);
 });
-test('packed writer refuses old firmware before BEGIN and negotiates format 3 with supported firmware', async () => {
+test('packed writer refuses old firmware before BEGIN and negotiates format 4 with supported firmware', async () => {
   const preset = createPreset();
   preset.pages[0][0][0].state1 = 'A';
   const image = buildImage(preset, before(), true);
@@ -98,8 +100,9 @@ test('packed writer refuses old firmware before BEGIN and negotiates format 3 wi
   await assert.rejects(client.saveImage(image), /Atualize/);
   assert.equal(calls, 0);
   client.canPackedText = true;
+  client.canUnified = true;
   client.request = async (command, payload = []) => {
-    if (command === 3) assert.deepEqual(payload.slice(2), [3, 245, 3]);
+    if (command === 3) assert.deepEqual(payload.slice(2), [3, 168, 4]);
     return command === 2 ? snapshot(image) : [0];
   };
   await client.saveImage(image);
@@ -142,4 +145,30 @@ test('Quad CC42 is not Nano tap; CC44 tap works internally and externally; state
   assert.equal(commandText(a, 0), '(PRESET)');
   assert.equal(commandText(a, 2), '(STOMP)');
   assert.equal(a.value3, 2);
+});
+
+test('historical compact EEPROM migrates correct internal gestures and all three external clicks', () => {
+  const decoded = decodeSnapshot(legacySnapshot(true), createPreset());
+  assert.equal(decoded.loaded, 36);
+  assert.equal(decoded.preset.pages.length, 2);
+  assert.equal(decoded.preset.pages[0][0][0].state1, 'PRESET');
+  assert.equal(decoded.preset.pages[0][1][0].tapTempo, false);
+  assert.equal(decoded.preset.pages[0][2][0].tapTempo, true);
+  assert.equal(decoded.preset.externals?.[0].value1, 47);
+  assert.equal(decoded.preset.externals?.[3].value1, 64);
+  assert.equal(decoded.preset.externals?.[6].value1, 44);
+  assert.equal(decoded.preset.externals?.[6].tapTempo, true);
+  assert.equal(decoded.preset.externals?.[7].type, 0);
+});
+test('new command types and nine external gestures survive EEPROM and JSON round trip', () => {
+  const p = createPreset();
+  assert.ok(p.externals);
+  p.externals.forEach((a, i) => {
+    Object.assign(a, { type: i % 2 ? 8 : 9, channel: i + 1, label: `GESTO ${i}` });
+  });
+  const image = buildImage(p, before());
+  const decoded = decodeSnapshot(snapshot(image), createPreset());
+  assert.equal(image.length, 936);
+  assert.deepEqual(decoded.preset, validatePreset(p));
+  assert.deepEqual(validatePreset(JSON.parse(JSON.stringify(p))), p);
 });

@@ -1,4 +1,4 @@
-#define REVISION "20261006-NOLED"
+#define REVISION "1.1.0"
 
 #include <MIDI.h>
 
@@ -81,10 +81,10 @@ void setup() {
 
 void loop() {
     // Consume external presses even in menus/recovery: never replay them later.
-    byte externalPresses = 0;
+    FootswitchState externalEvents[3] = {FootswitchState::NONE, FootswitchState::NONE, FootswitchState::NONE};
     bool externalAllowed = !editorStoragePending() && !expressionConfigurator.isActive() && controllerStateMachine.getState() == ControllerState::SEND_COMMAND;
     bool externalStates[] = {digitalRead(EXT_UPPER_PIN) == LOW, digitalRead(EXT_LOWER_PIN) == LOW, digitalRead(EXT_TOE_PIN) == LOW};
-    for (byte i = 0; i < 3; i++) if (externalSwitches[i].update(externalStates[i], millis(), externalAllowed)) externalPresses |= 1 << i;
+    for (byte i = 0; i < 3; i++) externalEvents[i] = externalSwitches[i].update(externalStates[i], millis(), externalAllowed, config.externalGestures(6 + i));
 
     if (editorUsbMode) updateEditorReader(controllerStateMachine.getState() == ControllerState::SEND_COMMAND && !expressionConfigurator.isActive());
     if (editorStoragePending()) {
@@ -97,7 +97,7 @@ void loop() {
     editorPendingScreen = false;
     if (editorTakeSaved()) {
         config.reloadExternal();
-        externalPresses = 0;
+        for (byte i = 0; i < 3; i++) externalEvents[i] = FootswitchState::NONE;
         expressionConfig.load();
         expressionController.reset();
         commandExecutor.resetAfterConfiguration();
@@ -110,6 +110,7 @@ void loop() {
         fs->scan();
     }
 
+    expressionController.setMode(config.getExpressionMode());
     if (!expressionConfigurator.isCalibrating()) expressionController.update();
 
     if (infoSwitchesPressed() || configSwitchesPressed() || usbModeSwitchesPressed() || expressionSwitchesPressed()) {
@@ -136,8 +137,10 @@ void loop() {
 
         case ControllerState::SEND_COMMAND:
             commandExecutor.sendCommands(footswitches);
-            for (byte i = 0; i < 3; i++) if (externalPresses & (1 << i)) commandExecutor.sendExternal(i);
-            printer.expressionStatus(expressionConfig.isEnabled(), expressionController.getLastValue());
+            for (byte i = 0; i < 3; i++) if (externalEvents[i] != FootswitchState::NONE) commandExecutor.sendExternal(i, externalEvents[i]);
+            expressionController.setMode(config.getExpressionMode());
+            expressionController.update();
+            printer.expressionStatus(expressionConfig.isEnabled(), expressionController.getLastValue(), config.getExpressionMode());
             break;
     }
 

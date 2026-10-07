@@ -17,7 +17,7 @@ inline int imageAddress(int offset) { return offset < IMAGE_SIZE ? offset : offs
 const int MARKER = 1020;
 const byte PENDING = 0x51;
 const byte VALID = 0xA5;
-inline bool unified() { return EEPROM.read(MARKER + 2) == 3; }
+inline bool unified() { return EEPROM.read(MARKER) == 0x43 && EEPROM.read(MARKER + 1) == 0x5A && EEPROM.read(MARKER + 2) == 3; }
 inline bool modern() {
     return EEPROM.read(MARKER) == 0x43 && EEPROM.read(MARKER + 1) == 0x5A && (EEPROM.read(MARKER + 2) == 2 || unified());
 }

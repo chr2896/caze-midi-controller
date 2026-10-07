@@ -3,6 +3,7 @@
 #include "config/command-type.h"
 #include "config/controller-button-entity.h"
 #include "consts.h"
+#include "config/storage-layout.h"
 
 #define CHANNEL 0
 #define TYPE 1
@@ -59,7 +60,7 @@ void ConfigurationStateMachine::incrementValue() {
     int numberOfValues = MIDI_MAX_VALUE;
 
     if (this->state == ConfigurationState::SELECT_TYPE) {
-        numberOfValues = NUMBER_OF_COMMAND_TYPES;
+        numberOfValues = Storage::unified() ? NUMBER_OF_COMMAND_TYPES : 8;
     } else if (this->state == ConfigurationState::SELECT_VALUE1 && (this->configBytes[TYPE] == CommandType::PAGE || this->configBytes[TYPE] == CommandType::TEMP_PAGE)) {
         numberOfValues = NUMBER_OF_PAGES;
     }
@@ -72,7 +73,7 @@ void ConfigurationStateMachine::decrementValue() {
     int numberOfValues = MIDI_MAX_VALUE;
 
     if (this->state == ConfigurationState::SELECT_TYPE) {
-        numberOfValues = NUMBER_OF_COMMAND_TYPES;
+        numberOfValues = Storage::unified() ? NUMBER_OF_COMMAND_TYPES : 8;
     } else if (this->state == ConfigurationState::SELECT_VALUE1 && (this->configBytes[TYPE] == CommandType::PAGE || this->configBytes[TYPE] == CommandType::TEMP_PAGE)) {
         numberOfValues = NUMBER_OF_PAGES;
     }

@@ -18,6 +18,16 @@ export const createExternals = (): MidiAction[] =>
     state1: '',
     state2: '',
   }));
+export const createGlobalExternals = (): MidiAction[] =>
+  Array.from({ length: 9 }, () => ({
+    type: 0,
+    channel: 1,
+    value1: 0,
+    value2: 0,
+    value3: 127,
+    label: '',
+    toggleOnOff: false,
+  }));
 export const externalTextUsage = (actions: MidiAction[]) =>
   actions.reduce(
     (sum, a) => sum + a.label.length + (a.state1 || '').length + (a.state2 || '').length,

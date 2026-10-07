@@ -1,5 +1,16 @@
 # Evolução CAZE MIDI CTRL
 
+## v1.1.0 — 2026-10-07
+
+Versão para Quad Cortex mini, com editor React/TypeScript e styled-components. Requer atualização conjunta do firmware e editor; exporte o preset antes de migrar de três para duas páginas.
+
+### Duas páginas, gestos externos e modos EXP
+
+- FS7–FS9: clique, longo e duplo globais, com estados Toggle independentes por gesto e bloqueio em menus/recuperação.
+- Comando EXP/EXP2: roteamento global CC1/CC2, envio da posição atual ao trocar e percentual do modo ativo no LCD.
+- CC64 + PÁGINA: sincroniza I/II da Quad com 1/2 do controlador; opção disponível no CC Toggle 64 e na biblioteca.
+- Migração de JSON v1/EEPROM antiga, backup da terceira página e layout v3 com 603 caracteres compartilhados; calibração preservada.
+
 ## Foots externos em entradas digitais
 
 - FS7/FS8/FS9 passam a D8/D9/D10 com INPUT_PULLUP e contato para GND.
@@ -33,3 +44,7 @@ As etapas abaixo descrevem o trabalho desta adaptação. Os commits foram recons
 9. **Externos globais (2026-10-05):** três entradas de clique simples (D11, D12 e A6 com resistor externo), configuração pelo web app, Toggle independente das páginas e labels de estados. Extensão EEPROM de 77 bytes com CRC, gravação verificada que preserva a calibração e testes C++/JavaScript. Atalhos opcionais CC47/CC64 para Quad Cortex mini; sem MIDI IN nesta etapa.
 
 10. **Web app TypeScript (2026-10-06):** migração para TypeScript estrito e styled-components; componentes de interface, hooks de rascunho/USB, domínio e transporte separados. Tema tipado, controles compartilhados e Prettier. Layout 2.0, presets JSON e protocolo do Nano preservados. Verificação de tipos incluindo testes, 29 testes de regressão e build de produção validados; sem alteração de firmware nesta etapa.
+
+## v1.0.0 — base publicada em 2026-09-23
+
+Tag atribuída ao commit `9b5fe3c`: base Nano Cortex com editor React, leitura/gravação USB, labels, calibração, tap tempo CC42, documentação e créditos originais.

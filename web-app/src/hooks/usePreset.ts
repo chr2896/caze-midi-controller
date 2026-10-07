@@ -1,5 +1,5 @@
 import { type ChangeEvent, useState } from 'react';
-import { createExternals, validateExternals } from '../domain/external-config';
+import { createGlobalExternals } from '../domain/external-config';
 import { createPreset, validatePreset } from '../domain/preset';
 import type { MidiAction, Preset } from '../domain/types';
 import { downloadFile } from '../utils/download';
@@ -7,29 +7,36 @@ import { errorMessage } from '../utils/errors';
 
 const storageKey = 'midi-controller-preset-v1';
 function loadPreset() {
+  const migrationNotice =
+    'Duas páginas: páginas 1/2 e cliques externos preservados. Página 3 e destinos antigos ficam no backup, disponível em Importar / Exportar.';
   try {
-    return validatePreset(JSON.parse(localStorage.getItem(storageKey) ?? 'null'));
-  } catch {
-    return createPreset();
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return { preset: createPreset(), notice: '' };
+    const parsed: unknown = JSON.parse(raw);
+    const legacy =
+      typeof parsed === 'object' && parsed && 'version' in parsed && parsed.version === 1;
+    if (legacy && !localStorage.getItem(`${storageKey}-before-two-pages`))
+      localStorage.setItem(`${storageKey}-before-two-pages`, raw);
+    return { preset: validatePreset(parsed), notice: legacy ? migrationNotice : '' };
+  } catch (error) {
+    return {
+      preset: createPreset(),
+      notice: `Não foi possível carregar o rascunho antigo: ${errorMessage(error)}. O original permanece no armazenamento; recupere-o antes de salvar no Nano.`,
+    };
   }
 }
 export function usePreset(page: number, foot: number, gesture: number) {
-  const [preset, setPreset] = useState(loadPreset);
-  const [notice, setNotice] = useState('');
+  const [initial] = useState(loadPreset);
+  const [preset, setPreset] = useState(initial.preset);
+  const [notice, setNotice] = useState(initial.notice);
   const external = foot >= 6;
-  const externals = preset.externals ?? createExternals();
-  const action = external ? externals[foot - 6] : preset.pages[page][foot][gesture];
+  const externals = preset.externals ?? createGlobalExternals();
+  const action = external ? externals[(foot - 6) * 3 + gesture] : preset.pages[page][foot][gesture];
   function update(patch: Partial<MidiAction>) {
     const next = structuredClone(preset);
     if (external) {
-      next.externals ??= createExternals();
-      Object.assign(next.externals[foot - 6], patch);
-      try {
-        validateExternals(next.externals);
-      } catch (error) {
-        setNotice(errorMessage(error));
-        return false;
-      }
+      next.externals ??= createGlobalExternals();
+      Object.assign(next.externals[(foot - 6) * 3 + gesture], patch);
     } else Object.assign(next.pages[page][foot][gesture], patch);
     try {
       validatePreset(next);
@@ -51,13 +58,20 @@ export function usePreset(page: number, foot: number, gesture: number) {
     if (!file) return;
     try {
       if (file.size > 100000) throw Error('Arquivo muito grande.');
-      const next = validatePreset(JSON.parse(await file.text()));
+      const parsed: unknown = JSON.parse(await file.text());
+      const legacy =
+        typeof parsed === 'object' && parsed && 'version' in parsed && parsed.version === 1;
+      const next = validatePreset(parsed);
       next.externals ??= structuredClone(externals); // Old presets do not erase the global draft.
       validatePreset(next);
       setPreset(next);
       try {
         localStorage.setItem(storageKey, JSON.stringify(next));
-        setNotice('Preset importado e salvo neste navegador.');
+        setNotice(
+          legacy
+            ? 'Preset migrado: páginas 1/2 e cliques externos importados. Página 3 continua no arquivo original; destinos da página 3 foram ajustados para página 2.'
+            : 'Preset importado e salvo neste navegador.',
+        );
       } catch {
         setNotice('Preset importado, mas sem persistência local.');
       }
@@ -65,6 +79,14 @@ export function usePreset(page: number, foot: number, gesture: number) {
       setNotice(`Não foi possível importar: ${errorMessage(error)}`);
     }
     event.target.value = '';
+  }
+  function exportPrevious() {
+    const raw = localStorage.getItem(`${storageKey}-before-two-pages`);
+    if (raw) downloadFile(raw, 'caze-midi-preset-original-3-paginas.json', 'application/json');
+    else
+      setNotice(
+        'Não há backup de três páginas neste navegador. Arquivos importados continuam no arquivo original.',
+      );
   }
   function exportFile() {
     downloadFile(
@@ -83,5 +105,15 @@ export function usePreset(page: number, foot: number, gesture: number) {
       setNotice('Leitura aplicada, mas não foi possível salvar no navegador. Exporte o preset.');
     }
   }
-  return { preset, externals, action, notice, update, importFile, exportFile, applyUsbPreset };
+  return {
+    preset,
+    externals,
+    action,
+    notice,
+    update,
+    importFile,
+    exportFile,
+    exportPrevious,
+    applyUsbPreset,
+  };
 }

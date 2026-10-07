@@ -93,6 +93,12 @@ export const FootEditorRoot = styled.aside`
     margin-top: 6px;
     line-height: 1.5;
   }
+  & input[type='checkbox'] {
+    width: auto;
+    display: inline-block;
+    margin: 0 8px 0 0;
+    accent-color: var(--accent);
+  }
   & .fields {
     display: grid;
     grid-template-columns: 1fr 1fr;

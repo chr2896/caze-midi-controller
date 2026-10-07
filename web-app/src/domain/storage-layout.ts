@@ -1,13 +1,14 @@
-import { decodeExternals, EXTERNAL_SIZE, encodeExternals } from './external-config';
-import { encodeInternalText, needsPackedText } from './internal-text';
-import { validatePreset } from './preset';
+import { createGlobalExternals, EXTERNAL_SIZE } from './external-config';
+import { encodeInternalText, orderedActions } from './internal-text';
+import { createPreset, validatePreset } from './preset';
+import { decodeSnapshot } from './serial-protocol';
 import type { Bytes, Preset } from './types';
 
 export const IMAGE_SIZE = 936;
 export const EXTENDED_IMAGE_SIZE = IMAGE_SIZE + EXTERNAL_SIZE;
 export const imageAddress = (offset: number) => (offset < IMAGE_SIZE ? offset : offset + 7);
 export function storageState(bytes: Bytes) {
-  if (bytes[1020] !== 67 || bytes[1021] !== 90 || bytes[1022] !== 2) return 'legacy';
+  if (bytes[1020] !== 67 || bytes[1021] !== 90 || ![2, 3].includes(bytes[1022])) return 'legacy';
   return bytes[1023] === 165 ? 'ready' : 'pending';
 }
 export function crc16(bytes: Bytes) {
@@ -27,29 +28,24 @@ export function validateSnapshot(bytes: unknown): number[] {
     throw Error('Backup da EEPROM inválido.');
   return bytes;
 }
-export function buildImage(preset: Preset, before: number[], includeExternals = false) {
-  validatePreset(preset);
+export function buildImage(preset: Preset, before: number[], _includeExternals = false) {
+  const normalized = validatePreset(preset);
+  normalized.externals ??=
+    decodeSnapshot(before, createPreset()).preset.externals ?? createGlobalExternals();
+  validatePreset(normalized);
   validateSnapshot(before);
   if (storageState(before) === 'pending')
     throw Error('Use Recuperar gravação com o backup anterior; a EEPROM atual está incompleta.');
-  const image = new Uint8Array(includeExternals ? EXTENDED_IMAGE_SIZE : IMAGE_SIZE);
-  for (let gesture = 0; gesture < 3; gesture++)
-    for (let page = 0; page < 3; page++)
-      for (let foot = 0; foot < 6; foot++) {
-        const index = gesture * 18 + page * 6 + foot;
-        const action = preset.pages[page][foot][gesture];
-        image.set(
-          [action.channel, action.type, action.value1, action.value2, action.value3],
-          index * 5,
-        );
-        for (let i = 0; i < action.label.length; i++)
-          image[270 + index * 12 + i] = action.label.charCodeAt(i);
-        if (action.toggleOnOff) image[918 + (index >> 3)] |= 1 << (index % 8);
-      }
-  if (needsPackedText(preset)) {
-    image.fill(0, 270, 918);
-    encodeInternalText(preset, image);
-  }
+  const image = new Uint8Array(IMAGE_SIZE);
+  const actions = orderedActions(normalized);
+  actions.forEach((action, index) => {
+    image.set(
+      [action.channel, action.type, action.value1, action.value2, action.value3],
+      index * 5,
+    );
+    if (action.toggleOnOff) image[918 + (index >> 3)] |= 1 << (index % 8);
+  });
+  encodeInternalText(normalized, image);
   const expAddress = storageState(before) === 'ready' ? 928 : 720;
   const exp = before.slice(expAddress, expAddress + 7);
   if (
@@ -66,10 +62,5 @@ export function buildImage(preset: Preset, before: number[], includeExternals = 
   }
   image.set(exp, 928);
   image[935] = 1; // Keep USB active for acknowledgement and verification.
-  if (includeExternals)
-    image.set(
-      encodeExternals(preset.externals ?? decodeExternals(before, crc16), crc16),
-      IMAGE_SIZE,
-    );
   return image;
 }

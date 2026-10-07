@@ -19,6 +19,11 @@ export const QuadLibraryRoot = styled.div`
     color: #e5eef3;
     font: inherit;
   }
+  && input[type='checkbox'] {
+    width: auto;
+    justify-self: start;
+    accent-color: var(--accent);
+  }
   a {
     color: #6ddbcc;
   }

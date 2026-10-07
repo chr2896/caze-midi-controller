@@ -1,5 +1,6 @@
 import { errorMessage } from '../utils/errors';
 import { decodeInternalText, PACKED_TEXT_FORMAT, TEXT_FORMAT_ADDRESS } from './internal-text';
+import { validateAction } from './preset';
 import type { Bytes, Preset } from './types';
 export interface Frame {
   command: number;
@@ -7,7 +8,7 @@ export interface Frame {
   payload: number[];
 }
 
-import { createExternals, decodeExternals } from './external-config';
+import { createGlobalExternals, decodeExternals } from './external-config';
 import { crc16, storageState } from './storage-layout';
 
 export function encodeFrame(command: number, sequence: number, payload: Bytes = []) {
@@ -62,8 +63,8 @@ export class FrameParser {
 
 export function decodeSnapshot(bytes: Bytes, draft: Preset) {
   if (bytes.length !== 1024) throw Error('Leitura incompleta da EEPROM.');
-  const preset = structuredClone(draft);
-  const warnings: string[] = [];
+  const preset = structuredClone(draft),
+    warnings: string[] = [];
   const state = storageState(bytes);
   if (state === 'pending')
     return {
@@ -74,64 +75,72 @@ export function decodeSnapshot(bytes: Bytes, draft: Preset) {
       loaded: 0,
       state,
     };
-  let loaded = 0;
+  const unified = state === 'ready' && bytes[1022] === 3;
+  if (!unified)
+    warnings.push(
+      'Migração para duas páginas: mantidas páginas 1/2 e clique dos externos; página 3 permanece apenas no backup. Destinos da página 3 passam à página 2.',
+    );
   let packed: ReturnType<typeof decodeInternalText> | null = null;
-  if (state === 'ready' && bytes[TEXT_FORMAT_ADDRESS] === PACKED_TEXT_FORMAT) {
+  if (state === 'ready' && (unified || bytes[TEXT_FORMAT_ADDRESS] === 0xa3)) {
     try {
-      packed = decodeInternalText(bytes);
+      if (unified && bytes[TEXT_FORMAT_ADDRESS] !== PACKED_TEXT_FORMAT)
+        throw Error('Formato de textos inválido.');
+      packed = decodeInternalText(bytes, !unified);
     } catch (error) {
       return { preset, warnings: [errorMessage(error)], loaded: 0, state };
     }
   }
-  if (state === 'ready') {
-    try {
-      preset.externals = decodeExternals(bytes, crc16);
-    } catch (error) {
-      preset.externals = createExternals();
-      warnings.push(errorMessage(error));
-    }
-  }
-  for (let page = 0; page < 3; page++)
-    for (let foot = 0; foot < 6; foot++)
-      for (let gesture = 0; gesture < 3; gesture++) {
-        const address = page * (state === 'ready' ? 30 : 48) + foot * 5 + gesture * 90;
-        const [channel, type, value1, value2, value3] = bytes.slice(address, address + 5);
-        const valid =
-          type <= 7 &&
-          channel >= 1 &&
-          channel <= 16 &&
-          [value1, value2, value3].every((v) => v <= 127) &&
-          (![6, 7].includes(type) || value1 < 3);
-        const location = `Página ${page + 1}, FS ${foot + 1}, ${['clique', 'longo', 'duplo'][gesture]}`;
-        if (!valid) {
-          warnings.push(
-            `${location}: dados inválidos ou não configurados; rascunho local mantido.`,
-          );
-          continue;
-        }
-        Object.assign(preset.pages[page][foot][gesture], { channel, type, value1, value2, value3 });
-        if (state === 'ready') {
-          const index = address / 5;
-          const action = preset.pages[page][foot][gesture];
-          delete action.state1;
-          delete action.state2;
-          delete action.tapTempo;
-          if (packed) Object.assign(action, packed[index]);
-          else {
-            const label = bytes.slice(270 + index * 12, 282 + index * 12);
-            if (label.some((v) => v !== 0 && (v < 32 || v > 126)))
-              warnings.push(`${location}: label inválido; label local mantido.`);
-            else
-              preset.pages[page][foot][gesture].label = String.fromCharCode(
-                ...label.slice(0, label.includes(0) ? label.indexOf(0) : 12),
-              );
-          }
-
-          preset.pages[page][foot][gesture].toggleOnOff = Boolean(
-            bytes[918 + (index >> 3)] & (1 << (index % 8)),
-          );
-        }
-        loaded++;
+  if (!unified) {
+    preset.externals = createGlobalExternals();
+    if (state === 'ready')
+      try {
+        decodeExternals(bytes, crc16).forEach((a, i) => {
+          if ([6, 7].includes(a.type) && a.value1 === 2) a.value1 = 1;
+          preset.externals?.splice(i * 3, 1, a);
+        });
+      } catch (error) {
+        warnings.push(errorMessage(error));
       }
+  } else preset.externals = createGlobalExternals();
+  let loaded = 0;
+  for (let slot = 0; slot < 45; slot++) {
+    const external = slot >= 36;
+    if (external && !unified) continue;
+    const gesture = external ? (slot - 36) % 3 : Math.floor(slot / 12),
+      page = external ? 0 : Math.floor((slot % 12) / 6),
+      foot = external ? Math.floor((slot - 36) / 3) : slot % 6;
+    const address = unified
+      ? slot * 5
+      : page * (state === 'ready' ? 30 : 48) + foot * 5 + gesture * 90;
+    const [channel, type, value1, value2, value3] = bytes.slice(address, address + 5);
+    const action = external ? preset.externals[slot - 36] : preset.pages[page][foot][gesture];
+    const incoming = { ...action, channel, type, value1, value2, value3 };
+    try {
+      validateAction(incoming, !unified);
+    } catch {
+      warnings.push(`FS ${foot + (external ? 7 : 1)}: dados inválidos; rascunho mantido.`);
+      continue;
+    }
+    Object.assign(action, incoming);
+    if (!unified && [6, 7].includes(type) && value1 === 2) action.value1 = 1;
+    if (state === 'ready') {
+      const index = address / 5;
+      delete action.state1;
+      delete action.state2;
+      delete action.tapTempo;
+      if (packed) Object.assign(action, packed[index]);
+      else {
+        const label = bytes.slice(270 + index * 12, 282 + index * 12);
+        if (label.some((v) => v !== 0 && (v < 32 || v > 126)))
+          warnings.push('Label inválido; texto local mantido.');
+        else
+          action.label = String.fromCharCode(
+            ...label.slice(0, label.includes(0) ? label.indexOf(0) : 12),
+          );
+      }
+      action.toggleOnOff = Boolean(bytes[918 + (index >> 3)] & (1 << (index % 8)));
+    }
+    loaded++;
+  }
   return { preset, warnings, loaded, state };
 }

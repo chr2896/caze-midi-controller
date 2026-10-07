@@ -18,7 +18,7 @@ public:
     void init();
     void update();
     void reset();
-    void setMode(byte selected) { if (mode != selected) { mode = selected; reset(); } }
+    void setMode(byte selected) { if (mode != selected) { mode = selected; reset(); lastRead = millis() - 10; } }
     int readCalibrationPosition();
     int getLastValue() const { return this->lastValue; }
 };

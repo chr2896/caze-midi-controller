@@ -27,6 +27,7 @@ export class SerialClient {
   canWrite = false;
   canExternal = false;
   canPackedText = false;
+  canUnified = false;
   onDisconnect: () => void;
   constructor(onDisconnect: () => void = () => {}) {
     this.onDisconnect = onDisconnect;
@@ -48,14 +49,15 @@ export class SerialClient {
       const info = await this.request(1);
       if (
         info.length !== 7 ||
-        ![3, 6, 3].every((v, i) => info[i] === v) ||
+        !([2, 3].includes(info[0]) && info[1] === 6 && info[2] === 3) ||
         ![30, 48].includes(info[3]) ||
-        info[4] !== 90 ||
+        ![60, 90].includes(info[4]) ||
         info[5] !== 5 ||
-        ![1, 3, 7, 15].includes(info[6])
+        ![1, 3, 7, 15, 31].includes(info[6])
       )
         throw Error('Firmware ou formato de memória incompatível com esta versão do editor.');
-      this.canWrite = Boolean(info[6] & 2);
+      this.canUnified = Boolean(info[6] & 16);
+      this.canWrite = this.canUnified;
       this.canExternal = Boolean(info[6] & 4);
       this.canPackedText = Boolean(info[6] & 8);
     } catch (error) {
@@ -126,7 +128,10 @@ export class SerialClient {
     });
   }
   async saveImage(image: Uint8Array, progress: (percent: number) => void = () => {}) {
-    if (!this.canWrite) throw Error('Atualize o firmware para habilitar gravação.');
+    if (!this.canWrite || !this.canUnified)
+      throw Error(
+        'Atualize o firmware para duas páginas, gestos externos e modos EXP antes de gravar.',
+      );
     if (![IMAGE_SIZE, EXTENDED_IMAGE_SIZE].includes(image.length))
       throw Error('Imagem de configuração inválida.');
     if (image.length === EXTENDED_IMAGE_SIZE && !this.canExternal)
@@ -149,7 +154,7 @@ export class SerialClient {
       ...(image.length === EXTENDED_IMAGE_SIZE || packed
         ? [image.length >> 8, image.length & 255]
         : []),
-      ...(packed ? [3] : []),
+      ...(packed ? [4] : []),
     ]);
     for (let offset = 0; offset < image.length; offset += 16) {
       await checked(4, [offset >> 8, offset & 255, ...image.slice(offset, offset + 16)]);
@@ -160,6 +165,7 @@ export class SerialClient {
     if (
       verified.length !== 1024 ||
       storageState(verified) !== 'ready' ||
+      verified[1022] !== 3 ||
       !image.every((v, i) => verified[imageAddress(i)] === v)
     )
       throw Error('A releitura não confirmou todos os dados. Reconecte e use Recuperar gravação.');

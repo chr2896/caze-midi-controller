@@ -13,6 +13,8 @@ interface Props {
   foot: number;
   gesture: number;
   midi: number;
+  expressionMode: number;
+  setExpressionMode: (mode: number) => void;
   editorOpen: boolean;
   line1: string;
   line2: string;
@@ -27,6 +29,8 @@ export function ControllerPreview({
   foot,
   gesture,
   midi,
+  expressionMode,
+  setExpressionMode,
   editorOpen,
   line1,
   line2,
@@ -41,7 +45,7 @@ export function ControllerPreview({
       </div>
       <div className="toolbar">
         <nav className="tabs" aria-label="Páginas do controlador">
-          {[0, 1, 2].map((p) => (
+          {[0, 1].map((p) => (
             <Button
               key={p}
               aria-pressed={page === p}
@@ -106,7 +110,9 @@ export function ControllerPreview({
             <strong>FS {i + 7}</strong>
             <span className="switch" />
             <small>{name}</small>
-            <small>{externals[i].label || types[externals[i].type]}</small>
+            <small>
+              {externals[i * 3 + gesture].label || types[externals[i * 3 + gesture].type]}
+            </small>
           </Button>
         ))}
       </div>
@@ -124,6 +130,18 @@ export function ControllerPreview({
             value={midi}
             onChange={(e) => setMidi(Number(e.target.value))}
           />
+        </label>
+        <label>
+          Modo de expressão na prévia
+          <select
+            value={expressionMode}
+            disabled={!expressionMode}
+            onChange={(e) => setExpressionMode(Number(e.target.value))}
+          >
+            {!expressionMode && <option value={0}>CC configurado no Nano</option>}
+            <option value={1}>EXP · CC1</option>
+            <option value={2}>EXP2 · CC2</option>
+          </select>
         </label>
         <Hint className="hint">
           A prévia é uma simulação. Nenhum comando é enviado ao Controlador.

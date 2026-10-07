@@ -144,10 +144,12 @@ void CommandExecutor::sendExternal(byte index, FootswitchState click) {
     byte no = NUMBER_OF_FOOTSWITCHES + index;
     if (this->config->getButtonData(no, click).type == CommandType::UNSET) return;
     int goBackToPage = this->getPrevPage();
+    int sourcePage = this->config->getPage();
+    bool syncPage = this->config->getButtonData(no, click).type == CommandType::QUAD_PAGE;
     this->executeCommand(no, click);
     if (this->lastWasTap) this->printer->tapInfo(no, click, this->tapTempo.bpm());
-    else this->printer->commandInfo(no, click, this->lastValue);
-    if (goBackToPage >= 0 && this->config->getButtonData(no, click).type != CommandType::QUAD_PAGE) { this->config->setPage(goBackToPage); }
+    else this->printer->commandInfo(no, click, this->lastValue, syncPage ? sourcePage : -1);
+    if (goBackToPage >= 0 && !syncPage) { this->config->setPage(goBackToPage); }
 }
 
 void CommandExecutor::sendCommands(Footswitch* footswitches[]) {
@@ -158,11 +160,13 @@ void CommandExecutor::sendCommands(Footswitch* footswitches[]) {
             int no = footswitches[i]->getNumber();
 
             int goBackToPage = this->getPrevPage();
+            int sourcePage = this->config->getPage();
+            bool syncPage = this->config->getButtonData(no, state).type == CommandType::QUAD_PAGE;
             this->executeCommand(no, state);
             if (this->lastWasTap) this->printer->tapInfo(no, state, this->tapTempo.bpm());
-            else this->printer->commandInfo(no, state, this->getExecutedValue());
+            else this->printer->commandInfo(no, state, this->getExecutedValue(), syncPage ? sourcePage : -1);
 
-            if (goBackToPage >= 0 && this->config->getButtonData(no, state).type != CommandType::QUAD_PAGE) {
+            if (goBackToPage >= 0 && !syncPage) {
                 this->config->setPage(goBackToPage);
             }
 

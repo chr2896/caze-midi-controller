@@ -9,8 +9,9 @@ import {
 } from '../domain/external-config';
 import { createPreset, validatePreset } from '../domain/preset';
 import { decodeSnapshot } from '../domain/serial-protocol';
-import { buildImage, crc16, EXTENDED_IMAGE_SIZE, imageAddress } from '../domain/storage-layout';
+import { buildImage, crc16, IMAGE_SIZE, imageAddress } from '../domain/storage-layout';
 import { SerialClient } from '../services/serial-client';
+import { before, legacySnapshot, snapshot } from './helpers';
 
 function preset() {
   const p = createPreset();
@@ -42,29 +43,15 @@ function preset() {
   });
   return { ...p, externals: p.externals };
 }
-function before() {
-  const b = new Array(1024).fill(255);
-  b.splice(720, 7, 165, 1, 4, 11, 13, 115, 1);
-  b.splice(936, 7, 150, 0, 180, 3, 17, 29, 199);
-  return b;
-}
-function snapshot(image: Uint8Array, base = before()) {
-  const b = [...base];
-  image.forEach((v, i) => {
-    b[imageAddress(i)] = v;
-  });
-  b.splice(1020, 4, 67, 90, 2, 165);
-  return b;
-}
 test('all external fields and internal actions round-trip while calibration is untouched', () => {
   const p = preset(),
     b = before(),
     image = buildImage(p, b, true),
     after = snapshot(image, b);
-  assert.equal(image.length, EXTENDED_IMAGE_SIZE);
-  assert.equal(imageAddress(image.length - 1), 1019);
+  assert.equal(image.length, IMAGE_SIZE);
+  assert.equal(imageAddress(image.length - 1), 935);
   assert.deepEqual(after.slice(936, 943), b.slice(936, 943));
-  assert.deepEqual(decodeSnapshot(after, createPreset()).preset, p);
+  assert.deepEqual(decodeSnapshot(after, createPreset()).preset, validatePreset(p));
   assert.deepEqual([...image.slice(0, 936)], [...buildImage(p, b)]);
   assert.equal(externalCommandText(p.externals[0], 0), '(PRESET)');
   assert.equal(externalCommandText(p.externals[0], 2), '(STOMP)');
@@ -77,7 +64,10 @@ test('old JSON preserves external EEPROM configuration and old EEPROM starts dis
   validatePreset(old);
   const b = snapshot(buildImage(p, before(), true));
   const rewritten = snapshot(buildImage(old, b, true));
-  assert.deepEqual(decodeExternals(rewritten, crc16), p.externals);
+  assert.deepEqual(
+    decodeSnapshot(rewritten, createPreset()).preset.externals,
+    validatePreset(p).externals,
+  );
   assert.deepEqual(decodeExternals(before(), crc16), createExternals());
 });
 test('56-character shared pool accepts its boundary and rejects overflow and invalid states', () => {
@@ -101,15 +91,13 @@ test('56-character shared pool accepts its boundary and rejects overflow and inv
   a[2].value1 = 3;
   assert.throws(() => validateExternals(a));
 });
-test('corrupt extension disables only external actions on read and reports the problem', () => {
-  const p = preset(),
-    b = snapshot(buildImage(p, before(), true));
-  b[965] ^= 1;
-  const decoded = decodeSnapshot(b, p);
-  assert.equal(decoded.loaded, 54);
-  assert.deepEqual(decoded.preset.pages, p.pages);
-  assert.deepEqual(decoded.preset.externals, createExternals());
-  assert.match(decoded.warnings[0], /corrompida/);
+test('old extension corruption disables migrated external actions and preserves internal read', () => {
+  const bytes = legacySnapshot();
+  bytes[965] ^= 1;
+  const decoded = decodeSnapshot(bytes, createPreset());
+  assert.equal(decoded.loaded, 36);
+  assert.ok(decoded.preset.externals?.every((a) => a.type === 0));
+  assert.ok(decoded.warnings.some((w) => w.includes('corrompida')));
 });
 test('extended writer negotiates size, skips calibration in readback and rejects old firmware', async () => {
   const image = buildImage(preset(), before(), true),
@@ -117,9 +105,12 @@ test('extended writer negotiates size, skips calibration in readback and rejects
   client.canWrite = true;
   await assert.rejects(client.saveImage(image), /Atualize/);
   client.canExternal = true;
+  client.canUnified = true;
+  client.canPackedText = true;
   const received: number[] = [];
   client.request = async (command, payload = []) => {
-    if (command === 3) assert.deepEqual(payload, [crc16(image) >> 8, crc16(image) & 255, 3, 245]);
+    if (command === 3)
+      assert.deepEqual(payload, [crc16(image) >> 8, crc16(image) & 255, 3, 168, 4]);
     if (command === 4) {
       assert.equal((payload[0] << 8) | payload[1], received.length);
       received.push(...payload.slice(2));
@@ -130,7 +121,7 @@ test('extended writer negotiates size, skips calibration in readback and rejects
   await client.saveImage(image);
   client.request = async (command) => {
     const b = snapshot(image);
-    b[1019] ^= 1;
+    b[900] ^= 1;
     return command === 2 ? b : [0];
   };
   await assert.rejects(client.saveImage(image), /releitura/);

@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { commandText, createPreset, isTapTempo, validatePreset } from '../domain/preset';
 
-test('preset round trip preserves all 54 actions independently', () => {
+test('preset round trip preserves all 36 internal actions independently', () => {
   const preset = createPreset();
-  preset.pages[2][5][2].label = 'SOLO';
-  assert.equal(validatePreset(JSON.parse(JSON.stringify(preset))).pages[2][5][2].label, 'SOLO');
+  preset.pages[1][5][2].label = 'SOLO';
+  assert.equal(validatePreset(JSON.parse(JSON.stringify(preset))).pages[1][5][2].label, 'SOLO');
   assert.equal(preset.pages[0][0][0].label, '');
 });
 test('reject invalid MIDI, pages and labels on import', () => {
@@ -64,4 +64,25 @@ test('ON/OFF option survives export and accepts older presets', () => {
   assert.doesNotThrow(() => validatePreset(preset));
   Object.assign(preset.pages[0][0][0], { toggleOnOff: 'true' });
   assert.throws(() => validatePreset(preset));
+});
+
+test('three-page presets migrate without mutating originals; external clicks move to gesture zero', () => {
+  const p = createPreset();
+  const old = {
+    version: 1,
+    pages: [...p.pages, structuredClone(p.pages[0])],
+    externals: [{ ...p.pages[0][0][0], label: 'EXT' }, p.pages[0][1][0], p.pages[0][2][0]],
+  };
+  old.pages[2][0][0].label = 'ARCHIVE';
+  old.pages[0][0][0].type = 6;
+  old.pages[0][0][0].value1 = 2;
+  const migrated = validatePreset(old);
+  assert.equal(migrated.version, 2);
+  assert.equal(migrated.pages.length, 2);
+  assert.equal(migrated.externals?.length, 9);
+  assert.equal(migrated.externals?.[0].label, 'EXT');
+  assert.equal(migrated.externals?.[1].type, 0);
+  assert.equal(migrated.pages[0][0][0].value1, 1);
+  assert.equal(old.pages[2][0][0].label, 'ARCHIVE');
+  assert.equal(old.pages[0][0][0].value1, 2);
 });

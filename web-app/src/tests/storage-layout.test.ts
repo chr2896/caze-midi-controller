@@ -13,7 +13,7 @@ function legacy() {
 function snapshot(image: Uint8Array) {
   const bytes = new Array(1024).fill(0);
   bytes.splice(0, image.length, ...image);
-  bytes.splice(1020, 4, 67, 90, 2, 165);
+  bytes.splice(1020, 4, 67, 90, 3, 165);
   return bytes;
 }
 test('CRC16 matches CCITT-FALSE reference', () => {
@@ -28,7 +28,7 @@ test('preset writes leave the independent pedal calibration untouched', () => {
   after.splice(0, image.length, ...image);
   assert.deepEqual(after.slice(936, 943), calibration);
 });
-test('all 54 actions, 12-character labels and flag bits round-trip without overlap', () => {
+test('all 36 actions, 12-character labels and flag bits round-trip without overlap', () => {
   const preset = createPreset();
   let index = 0;
   for (const page of preset.pages)
@@ -48,7 +48,7 @@ test('all 54 actions, 12-character labels and flag bits round-trip without overl
   const image = buildImage(preset, legacy());
   const decoded = decodeSnapshot(snapshot(image), createPreset());
   assert.equal(image.length, 936);
-  assert.equal(decoded.loaded, 54);
+  assert.equal(decoded.loaded, 45);
   assert.deepEqual(decoded.preset, preset);
   assert.deepEqual(decoded.warnings, []);
   assert.deepEqual([...image.slice(928, 935)], legacy().slice(720, 727));
@@ -82,6 +82,8 @@ test('writer sends ordered blocks, commits only after all bytes and verifies rea
     commands: number[] = [];
   const client = new SerialClient();
   client.canWrite = true;
+  client.canUnified = true;
+  client.canPackedText = true;
   client.request = async (command, payload = []) => {
     commands.push(command);
     if (command === 3) assert.equal((payload[0] << 8) | payload[1], crc16(image));
@@ -103,6 +105,8 @@ test('writer stops on a failed block and rejects mismatched readback', async () 
   const image = buildImage(createPreset(), legacy());
   const client = new SerialClient();
   client.canWrite = true;
+  client.canUnified = true;
+  client.canPackedText = true;
   const commands: number[] = [];
   client.request = async (command) => {
     commands.push(command);
@@ -123,6 +127,8 @@ test('writer refuses old firmware and menu-active responses before blocks', asyn
   const client = new SerialClient();
   await assert.rejects(client.saveImage(image), /Atualize/);
   client.canWrite = true;
+  client.canUnified = true;
+  client.canPackedText = true;
   const commands: number[] = [];
   client.request = async (command) => {
     commands.push(command);

@@ -42,6 +42,7 @@ void MidiControllerConfig::setButton(int no, ControllerButtonEntity button, Foot
   EEPROM.write(index + 2, button.value1);
   EEPROM.write(index + 3, button.value2);
   EEPROM.write(index + 4, button.value3);
+  reloadExternal();
 }
 
 void MidiControllerConfig::setPage(int page) {

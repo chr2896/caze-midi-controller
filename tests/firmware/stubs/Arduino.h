@@ -12,6 +12,7 @@ using std::min;
 #define LOW 0
 #define INPUT_PULLUP 2
 #define OUTPUT 1
+#define INPUT 0
 #define A0 14
 #define A1 15
 #define A2 16
@@ -32,7 +33,12 @@ inline unsigned long millis() { return testMillis; }
 inline void delay(int) {}
 inline void pinMode(int, int) {}
 inline void digitalWrite(int, int) {}
-inline int digitalRead(int) { return HIGH; }
+inline int digitalPins[32] = {};
+inline int digitalRead(int pin) { return digitalPins[pin]; }
+inline int analogValue = 0;
+inline int analogRead(int) { return analogValue; }
+inline long map(long x, long a, long b, long c, long d) { return (x-a)*(d-c)/(b-a)+c; }
+inline int constrain(int x, int a, int b) { return x<a?a:x>b?b:x; }
 struct HardwareSerial {
     std::deque<byte> input;
     std::vector<byte> output;

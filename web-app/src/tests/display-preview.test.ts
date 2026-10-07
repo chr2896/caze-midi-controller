@@ -33,3 +33,23 @@ test('external mode states and internal tap retain distinct LCD behavior', () =>
   assert.equal(displayPreview(tap, 0, 0, 0, 0, 2).line1, 'TAP TEMPO    EXP');
   assert.equal(displayPreview(tap, 6, 0, 0, 0, 2).line2.trim(), 'CC 42 0       0%');
 });
+
+test('EXP/EXP2 headers and percentage preserve the 16x2 display, including full-length labels', () => {
+  const a = { ...createPreset().pages[0][0][0], type: 8, label: '123456789012' };
+  for (const mode of [1, 2])
+    for (const midi of [0, 64, 127]) {
+      const lcd = displayPreview(a, 8, 1, 2, midi, 2, mode);
+      assert.equal(lcd.line1, `${' '.repeat(12)}${mode === 2 ? 'EXP2' : ' EXP'}`);
+      assert.equal(lcd.line2.length, 16);
+      assert.equal(lcd.line2.slice(0, 12), ' '.repeat(12));
+      assert.ok(lcd.line2.endsWith(`${Math.round((midi * 100) / 127)}%`));
+    }
+  const page = { ...a, type: 9 };
+  assert.ok(displayPreview(page, 7, 1, 0, 127, 2, 1).line2.startsWith('PAGE II / P2'));
+});
+
+test('synchronized pages display the corresponding custom state', () => {
+  const action = { ...createPreset().pages[0][0][0], type: 9, state1: 'RITMO', state2: 'SOLO' };
+  assert.ok(displayPreview(action, 7, 0, 0, 64, 2, 1).line2.startsWith('(RITMO)'));
+  assert.ok(displayPreview(action, 7, 1, 0, 64, 2, 1).line2.startsWith('(SOLO)'));
+});

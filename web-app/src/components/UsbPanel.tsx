@@ -42,8 +42,8 @@ export function UsbPanel({ preset, onLoad }: Props) {
         <summary>Como conectar e salvar</summary>
         <p>
           Ative USB MODE com FS4 + FS6 e saia dos menus. Leia e carregue o Nano antes de editar.
-          Salvar envia as 54 ações e os três externos no firmware atualizado. A configuração e a
-          calibração da expressão serão preservadas.
+          Salvar envia as 36 ações internas e nove externas no firmware atualizado. A configuração e
+          a calibração da expressão serão preservadas.
         </p>
       </details>
       {!('serial' in navigator) && (
@@ -76,9 +76,9 @@ export function UsbPanel({ preset, onLoad }: Props) {
       {decoded && (
         <div className="usb-result">
           <p>
-            {decoded.loaded} de 54 ações válidas.{' '}
+            {decoded.loaded} ações válidas carregadas.{' '}
             {decoded.state === 'ready'
-              ? 'Labels e ON/OFF foram lidos do Nano.'
+              ? 'Nomes e estados foram lidos do Nano.'
               : 'Labels locais serão preservados ao carregar comandos antigos.'}
           </p>
           <Button disabled={busy || !decoded.loaded} onClick={applyReading}>

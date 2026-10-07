@@ -16,15 +16,34 @@ export default function App() {
   const [foot, setFoot] = useState(0);
   const [gesture, setGesture] = useState(0);
   const [midi, setMidi] = useState(64);
+  const [expressionMode, setExpressionMode] = useState(1);
   const [activeSlot, setActiveSlot] = useState<ActiveSlot>(2);
   const [editorOpen, setEditorOpen] = useState(false);
   const usbDialog = useRef<HTMLDialogElement>(null);
   const fileDialog = useRef<HTMLDialogElement>(null);
   const editorHeading = useRef<HTMLHeadingElement>(null);
   const selectedButton = useRef<HTMLButtonElement>(null);
-  const { preset, externals, action, notice, update, importFile, exportFile, applyUsbPreset } =
-    usePreset(page, foot, gesture);
-  const { line1, line2 } = displayPreview(action, foot, page, gesture, midi, activeSlot);
+  const {
+    preset,
+    externals,
+    action,
+    notice,
+    update,
+    importFile,
+    exportFile,
+    exportPrevious,
+    applyUsbPreset,
+  } = usePreset(page, foot, gesture);
+  const dualExpression = [...preset.pages.flat(2), ...externals].some((a) => a.type === 8);
+  const { line1, line2 } = displayPreview(
+    action,
+    foot,
+    page,
+    gesture,
+    midi,
+    activeSlot,
+    dualExpression ? expressionMode : 0,
+  );
   const openUsb = () => usbDialog.current?.showModal();
   function selectFoot(index: number, event: MouseEvent<HTMLButtonElement>) {
     selectedButton.current = event.currentTarget;
@@ -59,7 +78,12 @@ export default function App() {
         title="Seus presets"
         closeLabel="Fechar arquivos"
       >
-        <PresetFiles onImport={importFile} onExport={exportFile} notice={notice} />
+        <PresetFiles
+          onImport={importFile}
+          onExport={exportFile}
+          onExportPrevious={exportPrevious}
+          notice={notice}
+        />
       </Modal>
       <Modal
         dialogRef={usbDialog}
@@ -82,6 +106,8 @@ export default function App() {
           line1={line1}
           line2={line2}
           setPage={setPage}
+          expressionMode={dualExpression ? expressionMode : 0}
+          setExpressionMode={setExpressionMode}
           setMidi={setMidi}
           selectFoot={selectFoot}
         />
@@ -89,12 +115,12 @@ export default function App() {
           <FootEditor
             textUsage={internalTextUsage(preset)}
             action={action}
-            externals={externals}
             foot={foot}
             page={page}
             gesture={gesture}
             activeSlot={activeSlot}
             setActiveSlot={setActiveSlot}
+            onToggleExpressionPreview={() => setExpressionMode((mode) => (mode === 1 ? 2 : 1))}
             setGesture={setGesture}
             update={update}
             closeEditor={closeEditor}

@@ -19,6 +19,7 @@ export function QuadLibrary({
   const [second, setSecond] = useState(2);
   const [toggle, setToggle] = useState(true);
   const [error, setError] = useState('');
+  const [syncPages, setSyncPages] = useState(false);
   const command = quadCommands.find((c) => c.id === selected) ?? quadCommands[0];
   const matches = quadCommands.filter(
     (c) =>
@@ -33,7 +34,12 @@ export function QuadLibrary({
       <label htmlFor={id}>
         {label}
         {command.options ? (
-          <select id={id} value={value} onChange={(e) => change(Number(e.target.value))}>
+          <select
+            id={id}
+            value={value}
+            disabled={syncPages}
+            onChange={(e) => change(Number(e.target.value))}
+          >
             {command.options.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.name} · {o.value}
@@ -101,6 +107,7 @@ export function QuadLibrary({
                 aria-pressed={selected === c.id}
                 onClick={() => {
                   setSelected(c.id);
+                  setSyncPages(false);
                   setFirst(c.options?.[0].value ?? 0);
                   setSecond(c.options?.at(-1)?.value ?? 127);
                   setToggle(false);
@@ -118,11 +125,22 @@ export function QuadLibrary({
               {command.name} <small>{command.cc === undefined ? 'PC' : `CC${command.cc}`}</small>
             </h3>
             <p>{command.description}</p>
+            {command.cc === 64 && (
+              <label>
+                <input
+                  type="checkbox"
+                  checked={syncPages}
+                  onChange={(e) => setSyncPages(e.target.checked)}
+                />
+                Sincronizar páginas do controlador e da Quad Cortex
+              </label>
+            )}
             {command.options && (
               <label>
                 Comportamento
                 <select
-                  value={toggle ? 'toggle' : 'single'}
+                  value={syncPages || toggle ? 'toggle' : 'single'}
+                  disabled={syncPages}
                   onChange={(e) => setToggle(e.target.value === 'toggle')}
                 >
                   <option value="single">Enviar um valor</option>
@@ -135,14 +153,29 @@ export function QuadLibrary({
                 {valueField(
                   command.cc === undefined
                     ? 'Programa (0–127)'
-                    : toggle
-                      ? 'Primeira pisada'
-                      : 'Valor enviado',
-                  first,
+                    : syncPages
+                      ? 'Página 1 do controlador'
+                      : toggle
+                        ? 'Primeira pisada'
+                        : 'Valor enviado',
+                  syncPages ? 0 : first,
                   setFirst,
                 )}
-                {toggle && command.options && valueField('Segunda pisada', second, setSecond)}
+                {(syncPages || toggle) &&
+                  command.options &&
+                  valueField(
+                    syncPages ? 'Página 2 do controlador' : 'Segunda pisada',
+                    syncPages ? 127 : second,
+                    setSecond,
+                  )}
               </div>
+            )}
+            {syncPages && (
+              <p>
+                A sincronização usa CC64 com valores fixos: 0 para I/P1 e 127 para II/P2. Cada
+                pisada alterna as duas páginas a partir da página atual do controlador. Desmarque a
+                opção para editar os valores livremente.
+              </p>
             )}
             <p>
               Aplica ao foot e gesto selecionados, mantendo o canal MIDI. Os textos poderão ser
@@ -151,7 +184,22 @@ export function QuadLibrary({
             {error && <p role="alert">{error}</p>}
             <Button
               onClick={() => {
-                if (update(quadPatch(command, first, toggle ? second : undefined))) {
+                if (
+                  update(
+                    syncPages && command.cc === 64
+                      ? {
+                          type: 9,
+                          value1: 64,
+                          value2: 0,
+                          value3: 127,
+                          label: 'PAGINA QUAD',
+                          state1: '',
+                          state2: '',
+                          tapTempo: false,
+                        }
+                      : quadPatch(command, first, toggle ? second : undefined),
+                  )
+                ) {
                   onApplied();
                   dialog.current?.close();
                 } else

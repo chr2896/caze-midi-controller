@@ -122,7 +122,7 @@ String Printer::valueToCommandTypeLabel(byte value) {
             return "GO TO PAGE";
         case CommandType::TEMP_PAGE:
             return "TEMP PAGE";
-        case CommandType::EXP_TOGGLE: return "EXP1/EXP2";
+        case CommandType::EXP_TOGGLE: return "EXP/EXP2";
         case CommandType::QUAD_PAGE: return "QUAD PAGE";
         
         default:
@@ -146,15 +146,21 @@ String footswitchStateToTwoLetters(FootswitchState click) {
     return "";
 }
 
-void Printer::commandInfo(int footswitchNo, FootswitchState click, byte lastValue) {
+void Printer::commandInfo(int footswitchNo, FootswitchState click, byte lastValue, int sourcePage) {
 
-    ControllerButtonEntity btn = this->config->getButtonData(footswitchNo, click);
     int page = this->config->getPage();
+    if (sourcePage >= 0) this->config->setPage(sourcePage);
+    ControllerButtonEntity btn = this->config->getButtonData(footswitchNo, click);
+    if (btn.type == CommandType::EXP_TOGGLE) {
+        if (sourcePage >= 0) this->config->setPage(page);
+        return; // expressionStatus updates the right-hand indicator without replacing the command.
+    }
 
     this->clearDisplay();
     this->lcd.setCursor(0, 0);
     char label[13];
     this->config->getLabel(footswitchNo, click, label);
+    if (sourcePage >= 0) this->config->setPage(page);
     if (label[0]) this->lcd.print(label);
     else {
         this->lcd.print(footswitchStateToTwoLetters(click) + "FS " + String(footswitchNo + 1));
@@ -165,10 +171,12 @@ void Printer::commandInfo(int footswitchNo, FootswitchState click, byte lastValu
     }
     this->lcd.setCursor(0, 1);
 
-    if (btn.type == CommandType::EXP_TOGGLE) {
-        this->lcd.print(F("EXP")); this->lcd.print(this->config->getExpressionMode());
-    } else if (btn.type == CommandType::QUAD_PAGE) {
-        this->lcd.print(page ? F("PAGE II / P2") : F("PAGE I / P1"));
+    if (btn.type == CommandType::QUAD_PAGE) {
+        if (sourcePage >= 0) this->config->setPage(sourcePage);
+        this->config->getState(footswitchNo, click, lastValue, label);
+        if (sourcePage >= 0) this->config->setPage(page);
+        if (label[0]) { this->lcd.print('('); this->lcd.print(label); this->lcd.print(')'); }
+        else this->lcd.print(page ? F("PAGE II / P2") : F("PAGE I / P1"));
     } else if (btn.type == CommandType::CC) {
         this->lcd.print(F("CC "));
         this->lcd.print(btn.value1);
@@ -394,7 +402,7 @@ void Printer::expressionStatus(bool enabled, int midiValue, byte mode) {
     if (percent == this->displayedExpression && mode == this->displayedMode) return;
 
     this->lcd.setCursor(12, 0);
-    if (mode) { this->lcd.print(F("EXP")); this->lcd.print(mode); }
+    if (mode == 2) this->lcd.print(F("EXP2"));
     else this->lcd.print(F(" EXP"));
     this->lcd.setCursor(12, 1);
     if (percent == -2) this->lcd.print(F(" OFF"));

@@ -6,7 +6,7 @@ Controlador MIDI para **Arduino Nano ATmega328P**, com seis footswitches, LCD 16
 
 ## O que ele faz
 
-- **54 ações:** seis footswitches × três páginas × clique simples, longo e duplo.
+- **45 ações:** 36 nos seis footswitches internos (duas páginas × três gestos) e nove nos três externos globais.
 - **Três externos globais:** dual momentâneo e toe switch, com clique simples, comandos configuráveis e textos por estado do Toggle. Veja [ligações e configuração](docs/EXTERNAL-FOOTSWITCHES.md).
 - Program Change, CC, CC Toggle e navegação de páginas.
 - Labels ASCII de até 12 caracteres, salvos no Nano.
@@ -34,8 +34,8 @@ O envio MIDI funciona sem o computador. O editor é usado para configuração; s
 | Área do editor | O que você pode fazer |
 |---|---|
 | **Controlador USB** | Conectar o Nano por Web Serial, ler a configuração, baixar um backup da EEPROM e gravar o preset completo com conferência por releitura. |
-| **Páginas e footswitches** | Selecionar uma das três páginas e um dos seis footswitches, na mesma disposição física do board. |
-| **Clique, Longo e Duplo** | Configurar separadamente os três gestos de cada footswitch, totalizando 54 ações. |
+| **Páginas e footswitches** | Selecionar uma das duas páginas e um dos seis footswitches, na mesma disposição física do board. |
+| **Clique, Longo e Duplo** | Configurar separadamente os três gestos de cada footswitch, com 36 ações internas e nove externas globais. |
 | **Foots externos** | Configurar FS7/FS8/FS9, globais em todas as páginas, com labels e textos como PRESET/STOMP. A biblioteca em modal oferece os 34 comandos CC/PC da tabela da Quad mini. |
 | **Prévia do LCD** | Visualizar o label, os valores do comando e o indicador EXP antes de salvar. O slider simula a expressão; não movimenta nem lê o pedal real. |
 | **Comandos e labels** | Escolher o tipo de comando, canal, número de CC/programa, valores e um label de até 12 caracteres sem acentos. |
@@ -54,7 +54,7 @@ pio run -e nanoatmega328
 pio run -e nanoatmega328 -t upload
 ```
 
-A placa testada usa **`board = nanoatmega328`**. Desconecte o editor/monitor serial antes do upload. Após migrar os presets para o mapa v2, não instale o firmware antigo diretamente: ele interpreta os endereços de outra forma.
+A placa testada usa **`board = nanoatmega328`**. Desconecte o editor/monitor serial antes do upload. Após migrar os presets para o mapa v3, não instale o firmware antigo diretamente: ele interpreta os endereços de outra forma.
 
 ### Editor local
 
@@ -83,7 +83,7 @@ npm run build
 2. Ative **USB MODE com FS4 + FS6** e saia dos menus físicos.
 3. No editor, conecte a porta do Nano e clique em **Ler controlador**.
 4. Baixe o backup e carregue a leitura antes de editar, se quiser preservar os comandos existentes.
-5. Edite o preset e clique em **Salvar preset no controlador**. Isso grava as 54 ações e os três externos no firmware atualizado, não apenas o footswitch selecionado.
+5. Edite o preset e clique em **Salvar preset no controlador**. Isso grava as 36 ações internas e nove externas no firmware atualizado, não apenas o footswitch selecionado.
 6. Aguarde a confirmação pela releitura. Os labels funcionam mesmo após desligar o computador.
 
 O modo USB usa serial a 115200 baud; o modo MIDI DIN usa 31250. O Nano com CH340 não se torna um dispositivo USB MIDI nativo. Para usar DIN, volte ao modo MIDI com a combinação existente.
@@ -120,4 +120,8 @@ Projeto original: **[galczo5/open-midi-controller](https://github.com/galczo5/op
 
 Os documentos herdados estão em `docs/*-inherited.md`; as fotos da base são do projeto herdado, não desta montagem.
 
-Os textos internos usam um pool de 540 caracteres compartilhado por nomes/estados das 54 ações. Para gravá-los, atualize o firmware do Nano. [Biblioteca MIDI e limites de texto](web-app/README.md#biblioteca-quad-cortex-mini-e-segunda-linha).
+Os textos internos usam um pool de 603 caracteres compartilhado por nomes/estados das 45 ações. Para gravá-los, atualize o firmware do Nano. [Biblioteca MIDI e limites de texto](web-app/README.md#biblioteca-quad-cortex-mini-e-segunda-linha).
+
+### Gestos externos e modos EXP
+
+Agora são **duas páginas internas** e **três gestos globais por foot externo**. Os novos comandos EXP1/EXP2 e CC64 + PÁGINA roteiam a expressão e sincronizam as páginas da Quad mini. [Atualização, migração e uso](docs/GLOBAL-GESTURES-EXP.md).

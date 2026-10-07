@@ -11,7 +11,7 @@ export interface MidiAction {
   state2?: string;
 }
 export interface Preset {
-  version: 1;
+  version: 2;
   pages: MidiAction[][][];
   externals?: MidiAction[];
 }

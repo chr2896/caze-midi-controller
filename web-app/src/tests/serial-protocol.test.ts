@@ -38,13 +38,13 @@ test('EEPROM decode uses legacy addresses, preserves labels/options and skips in
   draft.pages[0][0][0].label = 'SOLO';
   draft.pages[0][0][0].toggleOnOff = true;
   bytes.splice(0, 5, 1, 3, 20, 0, 127);
-  bytes.splice(301, 5, 2, 2, 21, 100, 0);
+  bytes.splice(253, 5, 2, 2, 21, 100, 0);
   const result = decodeSnapshot(bytes, draft);
   assert.equal(result.loaded, 2);
-  assert.equal(result.warnings.length, 52);
+  assert.equal(result.warnings.length, 35);
   assert.equal(result.preset.pages[0][0][0].label, 'SOLO');
   assert.equal(result.preset.pages[0][0][0].toggleOnOff, true);
-  assert.equal(result.preset.pages[2][5][2].value1, 21);
+  assert.equal(result.preset.pages[1][5][2].value1, 21);
   assert.equal(draft.pages[0][0][0].type, 0);
   assert.throws(() => decodeSnapshot(bytes.slice(1), draft));
 });

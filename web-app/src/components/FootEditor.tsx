@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import { externalNames, externalTextUsage, TEXT_BUDGET } from '../domain/external-config';
+import { externalNames } from '../domain/external-config';
 import { INTERNAL_TEXT_BUDGET } from '../domain/internal-text';
 import { isTapTempo, types } from '../domain/preset';
 import type { ActiveSlot, MidiAction, NumericActionKey } from '../domain/types';
@@ -10,13 +10,13 @@ import { Eyebrow, Hint } from './ui/Typography';
 
 interface Props {
   action: MidiAction;
-  externals: MidiAction[];
   textUsage: number;
   foot: number;
   page: number;
   gesture: number;
   activeSlot: ActiveSlot;
   setActiveSlot: (slot: ActiveSlot) => void;
+  onToggleExpressionPreview: () => void;
   setGesture: (gesture: number) => void;
   update: (patch: Partial<MidiAction>) => boolean;
   closeEditor: () => void;
@@ -25,13 +25,13 @@ interface Props {
 }
 export function FootEditor({
   action,
-  externals,
   textUsage,
   foot,
   page,
   gesture,
   activeSlot,
   setActiveSlot,
+  onToggleExpressionPreview,
   setGesture,
   update,
   closeEditor,
@@ -71,13 +71,13 @@ export function FootEditor({
         FS {foot + 1}
         <span>{external ? externalNames[foot - 6] : 'Configurar footswitch'}</span>
       </h2>
-      {external ? (
-        <Hint className="hint">
-          Clique simples · Todas as páginas
-          <br />
-          Textos: {externalTextUsage(externals)}/{TEXT_BUDGET} caracteres compartilhados.
+      {external && (
+        <Hint>
+          Global · Todas as páginas. Longo: 1 s; duplo: intervalo de até 250 ms. Com gestos extras,
+          o clique simples aguarda a definição do gesto.
         </Hint>
-      ) : (
+      )}
+      {
         <div className="gestures">
           {['Clique', 'Longo', 'Duplo'].map((name, g) => (
             <Button
@@ -90,7 +90,7 @@ export function FootEditor({
             </Button>
           ))}
         </div>
-      )}
+      }
       <label>
         Nome no display{' '}
         <input
@@ -104,7 +104,7 @@ export function FootEditor({
       <label>
         Tipo de comando
         <select
-          value={action.type}
+          value={action.type === 9 ? 3 : action.type}
           onChange={(e) =>
             update({
               type: Number(e.target.value),
@@ -112,13 +112,52 @@ export function FootEditor({
             })
           }
         >
-          {types.map((name, i) => (
+          {types.slice(0, 9).map((name, i) => (
             <option key={name} value={i}>
               {name}
             </option>
           ))}
         </select>
       </label>
+      {(action.type === 9 || (action.type === 3 && action.value1 === 64)) && (
+        <label>
+          <input
+            type="checkbox"
+            checked={action.type === 9}
+            onChange={(e) =>
+              update({
+                type: e.target.checked ? 9 : 3,
+                value1: 64,
+                value2: 0,
+                value3: 127,
+                tapTempo: false,
+              })
+            }
+          />
+          Sincronizar páginas do controlador e da Quad Cortex
+        </label>
+      )}
+      {action.type === 8 && (
+        <Hint>
+          Alterna o pedal conectado ao controlador entre CC1 (EXP) e CC2 (EXP2), usando o canal,
+          calibração e limites do menu de expressão. Inicia em EXP. Atribua volume e wah/whammy na
+          Quad; este comando não liga/desliga o bloco automaticamente.
+        </Hint>
+      )}
+      {action.type === 8 && (
+        <Button className="toggle-preview" onClick={onToggleExpressionPreview}>
+          Alternar valor ativo na prévia
+        </Button>
+      )}
+      {action.type === 9 && (
+        <>
+          <Hint>
+            Alterna a página do controlador e envia CC64: I/P1 = 0, II/P2 = 127. Usa a página atual
+            como referência, inclusive após outras trocas locais.
+          </Hint>
+          {number('Canal MIDI', 'channel', 16, 1)}
+        </>
+      )}
       {tap && (
         <Hint className="hint">
           O Nano calcula BPM pelas pisadas. A prévia aguarda o tap físico; não recebe o BPM da
@@ -140,7 +179,7 @@ export function FootEditor({
             value={action.value1}
             onChange={(e) => update({ value1: Number(e.target.value) })}
           >
-            {[0, 1, 2].map((p) => (
+            {[0, 1].map((p) => (
               <option key={p} value={p}>
                 Página {p + 1}
               </option>
@@ -148,7 +187,7 @@ export function FootEditor({
           </select>
         </label>
       )}
-      {action.type === 3 && (
+      {[3, 9].includes(action.type) && (
         <>
           <div className="fields">
             {(['state1', 'state2'] as const).map((key, i) => (
@@ -165,23 +204,26 @@ export function FootEditor({
             ))}
           </div>
           <Hint className="hint">
-            O LCD mostra apenas o estado enviado, entre parênteses. Texto vazio usa o valor ou
-            OFF/ON. O primeiro clique envia Valor 1; reiniciar ou salvar reinicia a alternância.
+            {action.type === 9
+              ? 'Os textos representam I/P1 (0) e II/P2 (127). A próxima pisada alterna a partir da página atual.'
+              : 'O LCD mostra apenas o estado enviado, entre parênteses. Texto vazio usa o valor ou OFF/ON. O primeiro clique envia Valor 1; reiniciar ou salvar reinicia a alternância.'}
           </Hint>
-          <Button
-            className="toggle-preview"
-            onClick={() => setActiveSlot(activeSlot === 2 ? 3 : 2)}
-          >
-            Alternar valor ativo na prévia
-          </Button>
+          {action.type === 3 && (
+            <Button
+              className="toggle-preview"
+              onClick={() => setActiveSlot(activeSlot === 2 ? 3 : 2)}
+            >
+              Alternar valor ativo na prévia
+            </Button>
+          )}
         </>
       )}
-      {!external && (
+      {
         <Hint>
-          Textos dos foots 1–6: {textUsage}/{INTERNAL_TEXT_BUDGET} caracteres compartilhados entre
-          nomes e estados, nas três páginas e gestos.
+          Textos de todos os foots: {textUsage}/{INTERNAL_TEXT_BUDGET} caracteres compartilhados
+          entre nomes e estados, nas duas páginas internas e nos nove gestos externos.
         </Hint>
-      )}
+      }
       <QuadLibrary update={update} onApplied={() => setActiveSlot(2)} />
       <p className="editor-note">
         Edições salvas no navegador. Para enviar ao Nano, abra{' '}

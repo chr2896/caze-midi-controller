@@ -48,7 +48,7 @@ npm run preview     # Prévia local do bundle
 
 ## Compatibilidade e USB
 
-O formato JSON v1 e as chaves existentes de localStorage foram preservados. Presets antigos sem foots externos continuam aceitos. As 54 ações internas, três foots externos, labels, ON/OFF, tap tempo e a calibração existente permanecem compatíveis.
+O formato JSON v2 usa duas páginas e nove ações externas; presets JSON v1 são migrados e o rascunho anterior é preservado em uma chave de backup. Presets antigos sem foots externos continuam aceitos. As 36 ações internas, três foots externos, labels, ON/OFF, tap tempo e a calibração existente permanecem compatíveis.
 
 A janela USB mantém seu componente montado ao fechar, preservando a conexão. A gravação conserva o backup anterior, valida o mapa de EEPROM e confere a releitura. Veja [USB-WRITE.md](USB-WRITE.md) e [USB-READ.md](USB-READ.md).
 
@@ -62,6 +62,10 @@ O Biome verifica o código e organiza imports; o Prettier continua responsável 
 
 Selecione um foot e clique em **Biblioteca MIDI · Quad Cortex mini**. O modal oferece busca por nome/CC, categorias e os 34 comandos da tabela de entrada (33 CC + Program Change), com base no [manual oficial CorOS 4.1.1](https://neuraldsp.com/manual/quad-cortex-mini). Escolha valores fixos ou dois estados nos comandos compatíveis e aplique ao gesto selecionado. O canal MIDI é mantido; confira se corresponde ao da Quad. CC0, CC32 e PC continuam sendo mensagens separadas.
 
-Nos foots 1–6, assim como nos externos, TOGGLE CC oferece **Texto do valor 1/2**. São até 10 caracteres ASCII por estado; exemplo `(PRESET)` / `(STOMP)`. O checkbox ON/OFF foi substituído por esses campos. O contador informa o limite compartilhado de 540 caracteres dos foots internos (nomes + estados, todas as páginas/gestos); os externos mantêm seu pool separado de 56 caracteres. Campos vazios preservam a apresentação anterior.
+Nos foots 1–6, assim como nos externos, TOGGLE CC oferece **Texto do valor 1/2**. São até 10 caracteres ASCII por estado; exemplo `(PRESET)` / `(STOMP)`. O checkbox ON/OFF foi substituído por esses campos. O contador informa o limite compartilhado de 603 caracteres para as 45 ações (internas e externas, todos os gestos). Campos vazios preservam a apresentação anterior.
 
 A biblioteca diferencia CC42 da mini (foot D da página II) do antigo tap da Nano Cortex e configura CC44 com cálculo local de BPM. O looper envia 127 em cada pisada nos comandos de acionamento. Isso não adiciona sincronização de estado ou leitura de BPM da Quad. A prévia é local; para uso físico, faça upload do novo firmware e depois salve pelo painel USB.
+
+## Gestos globais, EXP1/EXP2 e páginas sincronizadas
+
+Os foots externos oferecem Clique, Longo e Duplo numa única configuração global. A lista de tipos inclui **EXP1 / EXP2** e **CC64 + PÁGINA**; CC Toggle 64 também oferece um checkbox de sincronização. Veja o [guia completo](../docs/GLOBAL-GESTURES-EXP.md), incluindo a migração da antiga página 3, timings dos gestos e a configuração dos blocos na Quad.

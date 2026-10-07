@@ -1,8 +1,8 @@
 # Três footswitches externos globais
 
-FS7 (dual superior), FS8 (dual inferior) e FS9 (toe switch do Ampero II Press) têm uma ação configurável cada, válida em todas as páginas do controlador. Os seis foots internos mantêm as 54 ações e os menus existentes. Os externos são configurados pelo web app, não pelo menu físico.
+FS7 (dual superior), FS8 (dual inferior) e FS9 (toe switch do Ampero II Press) têm três ações configuráveis cada (clique, longo e duplo), válida em todas as páginas do controlador. Os seis foots internos mantêm as 36 ações e os menus existentes. Os externos são configurados pelo web app, não pelo menu físico.
 
-Cada externo aceita EMPTY, PG, CC, CC Toggle e os comandos de página do controlador. Um contato momentâneo normalmente aberto produz um acionamento ao pressionar, após 25 ms de estabilidade. Manter pressionado não repete; não há clique longo ou duplo. Dois cliques separados produzem dois comandos. Acionamentos detectados nos menus ou durante recuperação são descartados. Ao ligar com o contato fechado, é preciso soltar antes da primeira pisada válida.
+Cada externo aceita EMPTY, PG, CC, CC Toggle e os comandos de página do controlador. Um contato momentâneo normalmente aberto passa por debounce de 25 ms. Sem gestos extras, o clique permanece imediato; com longo/duplo configurados, os gestos são exclusivos. Veja os tempos e a migração no [guia atualizado](GLOBAL-GESTURES-EXP.md). Acionamentos detectados nos menus ou durante recuperação são descartados. Ao ligar com o contato fechado, é preciso soltar antes da primeira pisada válida.
 
 ## Ligações
 
@@ -37,7 +37,7 @@ A saída EXP pode continuar ligada à Quad mini ou à entrada de expressão do c
 
 Selecione FS7, FS8 ou FS9 na área de foots externos. Configure o canal, o comando e seus valores. Essas ações são globais e não mudam ao trocar a página do controlador. Use EMPTY para desabilitar uma entrada.
 
-Cada foot aceita nome de até 12 caracteres e, em CC Toggle, dois textos opcionais de até 10 caracteres. Os nomes e estados dos três externos compartilham **56 caracteres ASCII**, sem acentos; o editor mostra o contador e impede exceder esse limite.
+Cada gesto aceita nome de até 12 caracteres e, em CC Toggle, dois textos opcionais de até 10 caracteres. Os nomes e estados dos três externos compartilham **603 caracteres ASCII** com os nomes/estados das ações internas, sem acentos; o editor mostra o contador e impede exceder esse limite.
 
 O LCD mostra o label na primeira linha e somente o estado ativo, entre parênteses, na segunda. Assim `(PRESET)` e `(STOMP)` cabem sem ocupar o percentual EXP. Um estado sem texto personalizado usa o valor/ON/OFF existente. Os textos não alteram os números MIDI. Se os dois valores MIDI forem iguais, o primeiro texto é usado.
 
@@ -59,9 +59,9 @@ Um CC enviado pelo toe switch só acionará o wah se a Quad estiver configurada 
 
 ## Memória e validação
 
-Os dados novos ocupam 943–1019 da EEPROM. O mapa dos seis foots, a expressão e a calibração permanecem nos endereços anteriores. Os 77 bytes incluem identificação, três registros compactos, textos e CRC16. Dados externos ausentes ou inválidos deixam os três externos desativados.
+O mapa v3 armazena as nove ações externas em 180–224 e usa metadados/textos compartilhados com os internos. O mapa dos seis foots foi reorganizado; expressão e calibração permanecem nos endereços anteriores. A antiga extensão 943–1019 é preservada, mas não é usada em v3. Veja o [layout atual](../web-app/USB-WRITE.md).
 
-O protocolo anuncia capacidade 15 e aceita gravações antigas de 936 bytes ou estendidas de 1013 bytes. A imagem estendida pula os sete bytes físicos da calibração. O marcador de recuperação continua compartilhado: envio interrompido bloqueia comandos até a recuperação. O app bloqueia envio de externos a firmware antigo. JSON antigo sem `externals` mantém os externos já salvos no Nano quando usado diretamente pelo gravador.
+O protocolo anuncia capacidade 31 e exige o novo formato de 936 bytes. Os mapas antigos continuam disponíveis para leitura. A gravação termina antes dos sete bytes físicos da calibração. O marcador de recuperação continua compartilhado: envio interrompido bloqueia comandos até a recuperação. O app bloqueia envio de externos a firmware antigo. JSON antigo sem `externals` mantém os externos já salvos no Nano quando usado diretamente pelo gravador.
 
 Ao importar JSON antigo pela interface, os externos do rascunho atual são mantidos. Leia e carregue o Nano antes de importar se quiser partir da configuração física atual.
 
