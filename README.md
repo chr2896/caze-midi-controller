@@ -1,17 +1,18 @@
 # CAZE MIDI CTRL
 
-Controlador MIDI para **Arduino Nano ATmega328P**, com seis footswitches, LCD 16×2, LEDs, pedal de expressão e editor web em React + JavaScript.
+Controlador MIDI para **Arduino Nano ATmega328P**, com seis footswitches, LCD 16×2, pedal de expressão e editor web em React + TypeScript e styled-components.
 
 > Adaptação independente do [Open Midi Controller, de galczo5](https://github.com/galczo5/open-midi-controller). A autoria original e a licença recebida foram preservadas. Veja [créditos](docs/CREDITS.md).
 
 ## O que ele faz
 
 - **54 ações:** seis footswitches × três páginas × clique simples, longo e duplo.
+- **Três externos globais:** dual momentâneo e toe switch, com clique simples, comandos configuráveis e textos por estado do Toggle. Veja [ligações e configuração](docs/EXTERNAL-FOOTSWITCHES.md).
 - Program Change, CC, CC Toggle e navegação de páginas.
 - Labels ASCII de até 12 caracteres, salvos no Nano.
 - Indicador de expressão à direita do LCD, com percentual do MIDI final.
 - Calibração de calcanhar/ponta, MIN/MAX, canal, CC e REVERSE.
-- Tap tempo local para CC42: média dos últimos quatro intervalos.
+- Tap tempo local para CC42 (Nano Cortex) e CC44 via biblioteca (Quad mini): média dos últimos quatro intervalos.
 - Editor com prévia do LCD, presets JSON, Web Serial, leitura e gravação verificada.
 - Backup antes da gravação e recuperação após envio interrompido.
 
@@ -26,18 +27,19 @@ O envio MIDI funciona sem o computador. O editor é usado para configuração; s
 
 ### Conheça o editor web
 
-![Editor CAZE MIDI CTRL com conexão USB, seleção de páginas, prévia do LCD e configuração de CC Toggle](docs/images/caze-midi-web-app.png)
+![Editor CAZE MIDI CTRL com três foots externos globais e textos PRESET/STOMP](docs/images/caze-midi-external-foots.png)
 
-*Captura real do editor, com um preset carregado e o Nano desconectado. O percentual de expressão mostrado é uma simulação.*
+*Captura real do editor com exemplos PRESET/STOMP e página I/II nos externos. Nano desconectado; o percentual de expressão mostrado é uma simulação.*
 
 | Área do editor | O que você pode fazer |
 |---|---|
 | **Controlador USB** | Conectar o Nano por Web Serial, ler a configuração, baixar um backup da EEPROM e gravar o preset completo com conferência por releitura. |
 | **Páginas e footswitches** | Selecionar uma das três páginas e um dos seis footswitches, na mesma disposição física do board. |
 | **Clique, Longo e Duplo** | Configurar separadamente os três gestos de cada footswitch, totalizando 54 ações. |
+| **Foots externos** | Configurar FS7/FS8/FS9, globais em todas as páginas, com labels e textos como PRESET/STOMP. A biblioteca em modal oferece os 34 comandos CC/PC da tabela da Quad mini. |
 | **Prévia do LCD** | Visualizar o label, os valores do comando e o indicador EXP antes de salvar. O slider simula a expressão; não movimenta nem lê o pedal real. |
 | **Comandos e labels** | Escolher o tipo de comando, canal, número de CC/programa, valores e um label de até 12 caracteres sem acentos. |
-| **CC Toggle e ON/OFF** | Alternar o valor ativo na prévia e exibir valores personalizados como OFF/ON, mantendo os números MIDI e os parênteses do valor ativo. |
+| **Textos do CC Toggle** | Personalizar os dois estados da segunda linha nos foots 1–9, com até 10 caracteres por estado, mantendo os valores MIDI. |
 | **Importar / Exportar** | Levar presets JSON entre computadores ou entre localhost e o site publicado. O rascunho também fica salvo neste navegador. |
 | **Recuperação** | Repetir uma gravação interrompida usando o preset e o backup guardados antes do envio. |
 
@@ -81,7 +83,7 @@ npm run build
 2. Ative **USB MODE com FS4 + FS6** e saia dos menus físicos.
 3. No editor, conecte a porta do Nano e clique em **Ler controlador**.
 4. Baixe o backup e carregue a leitura antes de editar, se quiser preservar os comandos existentes.
-5. Edite o preset e clique em **Salvar preset no controlador**. Isso grava as 54 ações, não apenas o footswitch selecionado.
+5. Edite o preset e clique em **Salvar preset no controlador**. Isso grava as 54 ações e os três externos no firmware atualizado, não apenas o footswitch selecionado.
 6. Aguarde a confirmação pela releitura. Os labels funcionam mesmo após desligar o computador.
 
 O modo USB usa serial a 115200 baud; o modo MIDI DIN usa 31250. O Nano com CH340 não se torna um dispositivo USB MIDI nativo. Para usar DIN, volte ao modo MIDI com a combinação existente.
@@ -91,6 +93,7 @@ O modo USB usa serial a 115200 baud; o modo MIDI DIN usa 31250. O Nano com CH340
 | Assunto | Documento |
 |---|---|
 | Hardware e pinagem atual | [BUILD.md](BUILD.md) |
+| Dual foot e toe switch do Ampero II Press | [EXTERNAL-FOOTSWITCHES.md](docs/EXTERNAL-FOOTSWITCHES.md) |
 | Menus, footswitches e uso | [MANUAL.md](MANUAL.md) |
 | Upload | [UPLOADING.md](UPLOADING.md) |
 | Gravação, EEPROM e recuperação | [USB-WRITE.md](web-app/USB-WRITE.md) |
@@ -116,3 +119,5 @@ Firmware e editor foram desenvolvidos e testados incrementalmente no board do pr
 Projeto original: **[galczo5/open-midi-controller](https://github.com/galczo5/open-midi-controller)**. Adaptação CAZE e testes: **Carlos Henrique (CAZE)**, com assistência de desenvolvimento do Codex. O arquivo MIT [LICENSE.txt](LICENSE.txt), incluindo o aviso de Francois Best presente na base, foi mantido intacto. Bibliotecas mantêm suas próprias licenças.
 
 Os documentos herdados estão em `docs/*-inherited.md`; as fotos da base são do projeto herdado, não desta montagem.
+
+Os textos internos usam um pool de 540 caracteres compartilhado por nomes/estados das 54 ações. Para gravá-los, atualize o firmware do Nano. [Biblioteca MIDI e limites de texto](web-app/README.md#biblioteca-quad-cortex-mini-e-segunda-linha).

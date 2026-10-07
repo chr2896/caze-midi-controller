@@ -27,7 +27,9 @@ ConfigurationState ConfigurationStateMachine::next() {
     this->configBytes[this->state] = this->value;
     this->value = 0;
 
-    if (this->state == ConfigurationState::SELECT_VALUE2 && this->configBytes[TYPE] == CommandType::CC) {
+    if (this->state == ConfigurationState::SELECT_TYPE && (this->configBytes[TYPE] == CommandType::EXP_TOGGLE || this->configBytes[TYPE] == CommandType::QUAD_PAGE)) {
+        this->state = ConfigurationState::EXIT;
+    } else if (this->state == ConfigurationState::SELECT_VALUE2 && this->configBytes[TYPE] == CommandType::CC) {
         this->state = ConfigurationState::EXIT;
     } else if (this->state == ConfigurationState::SELECT_VALUE2 && this->configBytes[TYPE] == CommandType::NOTE) {
         this->state = ConfigurationState::EXIT;

@@ -14,6 +14,7 @@ class Printer {
         LiquidCrystal_I2C lcd;
         MidiControllerConfig *config;
         int displayedExpression = -3;
+        byte displayedMode = 255;
         void clearDisplay();
         void toggleValue(byte value, byte activeValue, bool customOnOff = false, byte offValue = 0);
 
@@ -34,7 +35,7 @@ class Printer {
         void clickType(FootswitchState click);
         void expressionPrompt(int state, byte value);
         void expressionSaved();
-        void expressionStatus(bool enabled, int midiValue);
+        void expressionStatus(bool enabled, int midiValue, byte mode = 0);
         void editorRecovery();
 };
 

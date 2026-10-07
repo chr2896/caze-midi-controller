@@ -1,4 +1,4 @@
-#define REVISION "20260922-EXP-LED"
+#define REVISION "20261006-NOLED"
 
 #include <MIDI.h>
 
@@ -11,11 +11,11 @@
 #include "configuration/configuration-state-machine.h"
 #include "executor/command-executor.h"
 #include "configuration/configurator.h"
-#include "led/led-controller.h"
 #include "expression/expression-config.h"
 #include "expression/expression-controller.h"
 #include "expression/expression-configurator.h"
 #include "editor/editor-reader.h"
+#include "footswitch/external-switch.h"
 
 /**
  * Open Midi Controller
@@ -38,15 +38,15 @@ Footswitch fs5(4, FS_5_PIN);
 Footswitch fs6(5, FS_6_PIN);
 
 Footswitch* footswitches[6] = { &fs1, &fs2, &fs3, &fs4, &fs5, &fs6 };
+ExternalSwitch externalSwitches[3];
 
 MidiControllerConfig config;
 ControllerStateMachine controllerStateMachine(ControllerState::SEND_COMMAND);
 ConfigurationStateMachine configurationStateMachine;
 Printer printer(&config);
-LedController ledController;
 ExpressionConfig expressionConfig;
 ExpressionController expressionController(&expressionConfig);
-CommandExecutor commandExecutor(&config, &printer, &ledController);
+CommandExecutor commandExecutor(&config, &printer);
 ExpressionConfigurator expressionConfigurator(&expressionConfig, &printer, &expressionController);
 Configurator configurator(&config, &configurationStateMachine, &printer);
 boolean usbModeButtonsPressed = false;
@@ -56,8 +56,11 @@ boolean editorPendingScreen = false;
 void(* resetFunc) (void) = 0;
 
 void setup() {
+    pinMode(EXT_UPPER_PIN, INPUT_PULLUP);
+    pinMode(EXT_LOWER_PIN, INPUT_PULLUP);
+    pinMode(EXT_TOE_PIN, INPUT_PULLUP);
+    config.reloadExternal();
     commandExecutor.init();
-    ledController.init();
     expressionController.init();
 
     printer.init();
@@ -77,18 +80,24 @@ void setup() {
 }
 
 void loop() {
+    // Consume external presses even in menus/recovery: never replay them later.
+    byte externalPresses = 0;
+    bool externalAllowed = !editorStoragePending() && !expressionConfigurator.isActive() && controllerStateMachine.getState() == ControllerState::SEND_COMMAND;
+    bool externalStates[] = {digitalRead(EXT_UPPER_PIN) == LOW, digitalRead(EXT_LOWER_PIN) == LOW, digitalRead(EXT_TOE_PIN) == LOW};
+    for (byte i = 0; i < 3; i++) if (externalSwitches[i].update(externalStates[i], millis(), externalAllowed)) externalPresses |= 1 << i;
 
     if (editorUsbMode) updateEditorReader(controllerStateMachine.getState() == ControllerState::SEND_COMMAND && !expressionConfigurator.isActive());
     if (editorStoragePending()) {
         if (!editorPendingScreen) {
             printer.editorRecovery();
-            ledController.allOff();
             editorPendingScreen = true;
         }
         return;
     }
     editorPendingScreen = false;
     if (editorTakeSaved()) {
+        config.reloadExternal();
+        externalPresses = 0;
         expressionConfig.load();
         expressionController.reset();
         commandExecutor.resetAfterConfiguration();
@@ -101,7 +110,6 @@ void loop() {
         fs->scan();
     }
 
-    ledController.update();
     if (!expressionConfigurator.isCalibrating()) expressionController.update();
 
     if (infoSwitchesPressed() || configSwitchesPressed() || usbModeSwitchesPressed() || expressionSwitchesPressed()) {
@@ -128,6 +136,7 @@ void loop() {
 
         case ControllerState::SEND_COMMAND:
             commandExecutor.sendCommands(footswitches);
+            for (byte i = 0; i < 3; i++) if (externalPresses & (1 << i)) commandExecutor.sendExternal(i);
             printer.expressionStatus(expressionConfig.isEnabled(), expressionController.getLastValue());
             break;
     }

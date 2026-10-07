@@ -13,19 +13,23 @@ São três páginas e seis footswitches por página. Cada um tem ações de cliq
 
 Nos menus, FS1 diminui, FS2 aumenta e FS4 avança/confirma. No menu de expressão, a calibração aparece depois de REVERSE. Consulte o [guia de calibração](EXPRESSION-CALIBRATION.md).
 
-## LCD e LEDs
+## LCD
+
+Além dos seis internos, há três [foots externos globais](docs/EXTERNAL-FOOTSWITCHES.md): FS7/FS8 para o dual e FS9 para o toe switch. São configurados pelo web app e têm somente clique simples, independente da página. Começam desativados (EMPTY). O Toggle externo mantém seu estado entre páginas e envia Valor 1 no primeiro clique após ligar ou salvar.
 
 A primeira linha mostra o label de até 12 caracteres, ou a identificação FS/página quando não há label. EXP usa as três últimas colunas; o percentual ocupa até quatro caracteres na segunda linha. Expressão desativada aparece como OFF.
 
 CC Toggle mostra os dois valores e coloca parênteses no ativo. 0/127 aparecem como OFF/ON. A opção do editor aplica OFF ao menor valor e ON ao maior para outros pares, sem mudar os números MIDI enviados. Valores iguais mantêm a apresentação original.
 
-No comportamento atual dos LEDs, CC comum fica aceso depois de acionado; Toggle usa o primeiro valor configurado como estado aceso. A opção visual ON/OFF do LCD não altera essa lógica.
+Nos externos, o Toggle mostra somente o estado ativo entre parênteses. Seus dois textos são personalizáveis, até 10 caracteres cada. Labels e estados dos três externos compartilham um limite de 56 caracteres. O EXP continua na mesma posição.
 
-CC42 exibe o [tap tempo](TAP-TEMPO.md) calculado localmente. A primeira pisada mostra -- BPM e as seguintes usam a média dos últimos quatro intervalos. Uma pausa maior que três segundos reinicia a sequência no próximo tap.
+Os LEDs de footswitch foram removidos do firmware. O estado enviado continua indicado pelo LCD; a alternância dos valores MIDI permanece igual.
+
+CC42 nos presets Nano Cortex, ou CC44 aplicado pela biblioteca Quad Cortex mini, exibe o [tap tempo](TAP-TEMPO.md) calculado localmente. A primeira pisada mostra -- BPM e as seguintes usam a média dos últimos quatro intervalos. Uma pausa maior que três segundos reinicia a sequência no próximo tap.
 
 ## Editor e persistência
 
-[Guia de leitura/gravação](web-app/USB-WRITE.md). As edições no editor são rascunhos até Salvar preset no controlador. A gravação inclui as 54 ações, labels e ON/OFF. Os ajustes atuais da expressão são preservados; sua calibração fica numa região independente.
+[Guia de leitura/gravação](web-app/USB-WRITE.md). As edições no editor são rascunhos até Salvar preset no controlador. A gravação inclui as 54 ações, nomes e textos personalizados dos estados. Os ajustes atuais da expressão são preservados; sua calibração fica numa região independente.
 
 Se o envio for interrompido, use Recuperar gravação. Guarde o JSON de backup baixado antes do envio. Não volte ao firmware legado após migrar sem um procedimento de restauração da EEPROM.
 

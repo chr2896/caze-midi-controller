@@ -8,7 +8,6 @@
 #include "footswitch/footswitch.h"
 #include "footswitch/footswitch-state.h"
 #include "printer/printer.h"
-#include "led/led-controller.h"
 #include "tap-tempo.h"
 
 #define TOGGLE_HISTORY_SIZE 20
@@ -17,7 +16,6 @@ class CommandExecutor {
     private:
         MidiControllerConfig *config;
         Printer *printer;
-        LedController *ledController;
 
         int toggleIterator;
         String toggleKeys[TOGGLE_HISTORY_SIZE];
@@ -30,15 +28,16 @@ class CommandExecutor {
         int prevPage;
         TapTempo tapTempo;
         bool lastWasTap = false;
+        int8_t externalValues[9] = {-1, -1, -1, -1, -1, -1, -1, -1, -1};
 
     public:
-        CommandExecutor(MidiControllerConfig* config, Printer *printer, LedController *ledController);
+        CommandExecutor(MidiControllerConfig* config, Printer *printer);
         void init();
         void executeCommand(int no, FootswitchState click);
         void sendCommands(Footswitch* footswitches[]);
+        void sendExternal(byte index, FootswitchState click = FootswitchState::CLICK);
         byte getExecutedValue();
         int getPrevPage();
-        void syncPageLeds();
         void resetAfterConfiguration();
 };
 

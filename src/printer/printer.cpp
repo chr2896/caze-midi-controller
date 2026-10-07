@@ -122,6 +122,8 @@ String Printer::valueToCommandTypeLabel(byte value) {
             return "GO TO PAGE";
         case CommandType::TEMP_PAGE:
             return "TEMP PAGE";
+        case CommandType::EXP_TOGGLE: return "EXP1/EXP2";
+        case CommandType::QUAD_PAGE: return "QUAD PAGE";
         
         default:
             return "ERROR: UNKNOWN";
@@ -156,12 +158,18 @@ void Printer::commandInfo(int footswitchNo, FootswitchState click, byte lastValu
     if (label[0]) this->lcd.print(label);
     else {
         this->lcd.print(footswitchStateToTwoLetters(click) + "FS " + String(footswitchNo + 1));
-        this->lcd.setCursor(9, 0);
-        this->lcd.print("P" + String(page + 1));
+        if (footswitchNo < BUTTON_NO) {
+            this->lcd.setCursor(9, 0);
+            this->lcd.print("P" + String(page + 1));
+        }
     }
     this->lcd.setCursor(0, 1);
 
-    if (btn.type == CommandType::CC) {
+    if (btn.type == CommandType::EXP_TOGGLE) {
+        this->lcd.print(F("EXP")); this->lcd.print(this->config->getExpressionMode());
+    } else if (btn.type == CommandType::QUAD_PAGE) {
+        this->lcd.print(page ? F("PAGE II / P2") : F("PAGE I / P1"));
+    } else if (btn.type == CommandType::CC) {
         this->lcd.print(F("CC "));
         this->lcd.print(btn.value1);
         this->lcd.print(' ');
@@ -169,6 +177,13 @@ void Printer::commandInfo(int footswitchNo, FootswitchState click, byte lastValu
     } else if (btn.type == CommandType::TOGGLE_CC) {
         bool customOnOff = this->config->useOnOff(footswitchNo, click) && btn.value2 != btn.value3;
         byte offValue = min(btn.value2, btn.value3);
+        if (this->config->hasStateText(footswitchNo, click)) {
+            this->config->getState(footswitchNo, click, lastValue, label);
+            if (label[0]) {
+                this->lcd.print('('); this->lcd.print(label); this->lcd.print(')');
+            } else this->toggleValue(lastValue, lastValue, customOnOff, offValue);
+            return;
+        }
         this->toggleValue(btn.value2, lastValue, customOnOff, offValue);
         this->lcd.print(' ');
         this->toggleValue(btn.value3, lastValue, customOnOff, offValue);
@@ -373,13 +388,14 @@ void Printer::toggleValue(byte value, byte activeValue, bool customOnOff, byte o
     if (value == activeValue) this->lcd.print(')');
 }
 
-void Printer::expressionStatus(bool enabled, int midiValue) {
+void Printer::expressionStatus(bool enabled, int midiValue, byte mode) {
     // Use the last transmitted MIDI value, including MIN/MAX and REVERSE.
     int percent = !enabled ? -2 : (midiValue < 0 ? -1 : (midiValue * 100 + 63) / 127);
-    if (percent == this->displayedExpression) return;
+    if (percent == this->displayedExpression && mode == this->displayedMode) return;
 
-    this->lcd.setCursor(13, 0);
-    this->lcd.print(F("EXP"));
+    this->lcd.setCursor(12, 0);
+    if (mode) { this->lcd.print(F("EXP")); this->lcd.print(mode); }
+    else this->lcd.print(F(" EXP"));
     this->lcd.setCursor(12, 1);
     if (percent == -2) this->lcd.print(F(" OFF"));
     else if (percent == -1) this->lcd.print(F(" --%"));
@@ -390,4 +406,5 @@ void Printer::expressionStatus(bool enabled, int midiValue) {
         this->lcd.print('%');
     }
     this->displayedExpression = percent;
+    this->displayedMode = mode;
 }

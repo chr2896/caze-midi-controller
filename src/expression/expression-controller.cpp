@@ -52,7 +52,7 @@ void ExpressionController::update() {
     }
 
     MIDI.sendControlChange(
-        this->config->getCC(),
+        this->mode ? this->mode : this->config->getCC(),
         value,
         this->config->getChannel()
     );

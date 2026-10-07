@@ -1,5 +1,5 @@
 #define NUMBER_OF_FOOTSWITCHES 6
-#define NUMBER_OF_PAGES 3
+#define NUMBER_OF_PAGES 2
 #define MIDI_MAX_VALUE 128
 
 #define FS_1_PIN 2 
@@ -24,15 +24,12 @@
 
 // Hardware additions
 #define EXPRESSION_PIN A0
+#define EXT_UPPER_PIN 8
+#define EXT_LOWER_PIN 9
+// All three external switches close to GND and use internal pull-ups.
+#define EXT_TOE_PIN 10
 
-// Six switch LEDs — direct Arduino Nano GPIOs.
-// D8-D10 and A1-A3 are unused by the original controller.
-#define LED_1_PIN 8
-#define LED_2_PIN 9
-#define LED_3_PIN 10
-#define LED_4_PIN A1
-#define LED_5_PIN A2
-#define LED_6_PIN A3
+// D11-D12 and A1-A3 are free; this firmware does not drive footswitch LEDs.
 
 // Reserved switch combination to enter expression configuration.
 // FS5 + FS6 are otherwise normal switches.

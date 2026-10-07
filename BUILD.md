@@ -1,17 +1,18 @@
 # Hardware da versão CAZE
 
-Esta versão usa LEDs ligados diretamente ao Nano; não usa 74HC595. O LCD é **16×2 I²C**, endereço configurado `0x27`.
+Esta versão não usa LEDs de footswitch nem 74HC595. O LCD é **16×2 I²C**, endereço configurado `0x27`.
 
 | Função | Pino |
 |---|---|
 | FS1 / FS2 / FS3 / FS4 / FS5 / FS6 | D2 / D3 / D4 / D5 / D6 / D7 |
-| LED FS1 / FS2 / FS3 | D8 / D9 / D10 |
-| LED FS4 / FS5 / FS6 | A1 / A2 / A3 |
+| Pinos livres (antigos LEDs) | D11 / D12 / A1 / A2 / A3 |
 | Expressão | A0 |
+| Dual externo superior / inferior | D8 / D9 |
+| Toe switch externo | D10, com INPUT_PULLUP |
 | LCD SDA / SCL | A4 / A5 |
 | MIDI serial TX | D1/TX, através do circuito MIDI adequado |
 
-Os footswitches usam INPUT_PULLUP: contatos entre a entrada e GND. LEDs precisam de resistor em série dimensionado para o LED e a corrente permitida pelo Nano; o firmware usa HIGH/LOW, não controle PWM de brilho.
+Os seis footswitches internos e os três externos usam `INPUT_PULLUP`: contatos momentâneos normalmente abertos entre a entrada e GND, sem resistor externo. O dual usa D8/D9 e o toe switch usa D10. Veja a identificação dos contatos no [guia dos foots externos](docs/EXTERNAL-FOOTSWITCHES.md). A entrada de expressão continua em A0.
 
 Disposição física:
 

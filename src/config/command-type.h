@@ -9,9 +9,11 @@ enum CommandType {
   NEXT_PAGE = 4,
   PREV_PAGE = 5,
   PAGE = 6,
-  TEMP_PAGE = 7
+  TEMP_PAGE = 7,
+  EXP_TOGGLE = 8,
+  QUAD_PAGE = 9
 };
 
-#define NUMBER_OF_COMMAND_TYPES 8
+#define NUMBER_OF_COMMAND_TYPES 10
 
 #endif

@@ -9,6 +9,7 @@ class ExpressionController {
 private:
     ExpressionConfig* config;
     int lastValue;
+    byte mode = 0;
     unsigned long lastRead;
     static const byte FILTER_SAMPLES = 4;
 
@@ -17,6 +18,7 @@ public:
     void init();
     void update();
     void reset();
+    void setMode(byte selected) { if (mode != selected) { mode = selected; reset(); } }
     int readCalibrationPosition();
     int getLastValue() const { return this->lastValue; }
 };

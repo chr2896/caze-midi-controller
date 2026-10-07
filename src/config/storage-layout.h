@@ -10,11 +10,16 @@ const int EXPRESSION = 928;
 const int USB = 935;
 const int IMAGE_SIZE = 936;
 const int CALIBRATION = 936; // Separate from web preset writes (0..935).
+const int EXTERNAL_FOOTS = 943; // Three global switches; calibration 936..942 stays untouched.
+const int EXTERNAL_SIZE = 77;
+const int EXTENDED_IMAGE_SIZE = IMAGE_SIZE + EXTERNAL_SIZE;
+inline int imageAddress(int offset) { return offset < IMAGE_SIZE ? offset : offset + 7; }
 const int MARKER = 1020;
 const byte PENDING = 0x51;
 const byte VALID = 0xA5;
+inline bool unified() { return EEPROM.read(MARKER + 2) == 3; }
 inline bool modern() {
-    return EEPROM.read(MARKER) == 0x43 && EEPROM.read(MARKER + 1) == 0x5A && EEPROM.read(MARKER + 2) == 2;
+    return EEPROM.read(MARKER) == 0x43 && EEPROM.read(MARKER + 1) == 0x5A && (EEPROM.read(MARKER + 2) == 2 || unified());
 }
 inline bool ready() { return modern() && EEPROM.read(MARKER + 3) == VALID; }
 inline bool pending() { return modern() && !ready(); }
