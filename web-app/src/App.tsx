@@ -6,12 +6,17 @@ import { FootEditor } from './components/FootEditor';
 import { Modal } from './components/Modal';
 import { PresetFiles } from './components/PresetFiles';
 import { UsbPanel } from './components/UsbPanel';
+import { Welcome } from './components/Welcome';
 import { displayPreview } from './domain/display-preview';
 import { internalTextUsage } from './domain/internal-text';
 import type { ActiveSlot } from './domain/types';
 import { usePreset } from './hooks/usePreset';
+import { useUsbController } from './hooks/useUsbController';
+import { t, useLanguage } from './i18n';
 
 export default function App() {
+  useLanguage();
+  const [entered, setEntered] = useState(false);
   const [page, setPage] = useState(0);
   const [foot, setFoot] = useState(0);
   const [gesture, setGesture] = useState(0);
@@ -25,15 +30,26 @@ export default function App() {
   const selectedButton = useRef<HTMLButtonElement>(null);
   const {
     preset,
+    pendingChanges,
+    compareReading,
+    synced,
     externals,
     action,
     notice,
     update,
+    resetFoot,
     importFile,
     exportFile,
     exportPrevious,
     applyUsbPreset,
   } = usePreset(page, foot, gesture);
+  const usb = useUsbController(preset, applyUsbPreset, compareReading);
+  async function startConnected() {
+    if (await usb.connect()) {
+      setEntered(true);
+      usbDialog.current?.showModal();
+    }
+  }
   const dualExpression = [...preset.pages.flat(2), ...externals].some((a) => a.type === 8);
   const { line1, line2 } = displayPreview(
     action,
@@ -71,66 +87,95 @@ export default function App() {
   }, []);
   return (
     <AppRoot>
-      <AppHeader onOpenFiles={() => fileDialog.current?.showModal()} onOpenUsb={openUsb} />
+      {entered ? (
+        <AppHeader onOpenFiles={() => fileDialog.current?.showModal()} onOpenUsb={openUsb} />
+      ) : (
+        <Welcome
+          busy={usb.busy}
+          message={usb.message}
+          onConnect={startConnected}
+          onDemo={() => setEntered(true)}
+        />
+      )}
+      {entered && (
+        <div className="sync-status" role="status">
+          <span>
+            {usb.connected ? t('Controlador conectado') : t('Modo demo · Sem conexão USB')}
+          </span>
+          <span className={pendingChanges ? 'pending' : ''}>
+            {pendingChanges
+              ? t('● Alterações não enviadas ao controlador')
+              : synced
+                ? t('✓ Configuração conferida no controlador')
+                : t('Rascunho local · Não conferido no controlador')}
+          </span>
+        </div>
+      )}
       <Modal
         dialogRef={fileDialog}
         id="files-title"
-        title="Seus presets"
-        closeLabel="Fechar arquivos"
+        title={t('Seus presets')}
+        closeLabel={t('Fechar arquivos')}
       >
         <PresetFiles
           onImport={importFile}
           onExport={exportFile}
           onExportPrevious={exportPrevious}
-          notice={notice}
+          notice={t(notice)}
         />
       </Modal>
       <Modal
         dialogRef={usbDialog}
         id="usb-title"
-        title="Sincronizar controlador"
-        closeLabel="Fechar conexão USB"
+        title={t('Sincronizar controlador')}
+        closeLabel={t('Fechar conexão USB')}
       >
         {/* Keep mounted when the dialog closes: the serial connection must survive. */}
-        <UsbPanel preset={preset} onLoad={applyUsbPreset} />
+        <UsbPanel controller={usb} />
       </Modal>
-      <div className={`workspace ${editorOpen ? 'editing' : ''}`}>
-        <ControllerPreview
-          preset={preset}
-          externals={externals}
-          page={page}
-          foot={foot}
-          gesture={gesture}
-          midi={midi}
-          editorOpen={editorOpen}
-          line1={line1}
-          line2={line2}
-          setPage={setPage}
-          expressionMode={dualExpression ? expressionMode : 0}
-          setExpressionMode={setExpressionMode}
-          setMidi={setMidi}
-          selectFoot={selectFoot}
-        />
-        {editorOpen && (
-          <FootEditor
-            textUsage={internalTextUsage(preset)}
-            action={action}
-            foot={foot}
+      {entered && (
+        <div className={`workspace ${editorOpen ? 'editing' : ''}`}>
+          <ControllerPreview
+            preset={preset}
+            externals={externals}
             page={page}
+            foot={foot}
             gesture={gesture}
-            activeSlot={activeSlot}
-            setActiveSlot={setActiveSlot}
-            onToggleExpressionPreview={() => setExpressionMode((mode) => (mode === 1 ? 2 : 1))}
-            setGesture={setGesture}
-            update={update}
-            closeEditor={closeEditor}
-            onOpenUsb={openUsb}
-            editorHeading={editorHeading}
+            midi={midi}
+            editorOpen={editorOpen}
+            line1={line1}
+            line2={line2}
+            setPage={setPage}
+            expressionMode={dualExpression ? expressionMode : 0}
+            setExpressionMode={setExpressionMode}
+            setMidi={setMidi}
+            selectFoot={selectFoot}
           />
-        )}
-      </div>
+          {editorOpen && (
+            <FootEditor
+              textUsage={internalTextUsage(preset)}
+              action={action}
+              foot={foot}
+              page={page}
+              gesture={gesture}
+              activeSlot={activeSlot}
+              setActiveSlot={setActiveSlot}
+              onToggleExpressionPreview={() => setExpressionMode((mode) => (mode === 1 ? 2 : 1))}
+              setGesture={setGesture}
+              update={update}
+              onResetFoot={() => {
+                resetFoot();
+                setActiveSlot(2);
+              }}
+              closeEditor={closeEditor}
+              onOpenUsb={openUsb}
+              editorHeading={editorHeading}
+            />
+          )}
+        </div>
+      )}
       <p className="notice" role="status">
-        {notice}
+        {t(notice)}
       </p>
     </AppRoot>
   );

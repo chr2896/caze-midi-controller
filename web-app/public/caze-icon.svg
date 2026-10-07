@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><title>CAZE MIDI CTRL</title>
+<defs><linearGradient id="bg" x2=".8" y2="1"><stop stop-color="#273b43"/><stop offset="1" stop-color="#0d151b"/></linearGradient><linearGradient id="cyan" x2="1" y2="1"><stop stop-color="#bcffff"/><stop offset="1" stop-color="#48abbc"/></linearGradient></defs>
+<rect x="40" y="40" width="944" height="944" rx="216" fill="url(#bg)"/>
+<rect x="61" y="61" width="902" height="902" rx="196" fill="none" stroke="#58747f" stroke-width="4"/>
+<path d="M710 274 H383 Q285 274 285 372 V652 Q285 750 383 750 H710" fill="none" stroke="url(#cyan)" stroke-width="88" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M479 512 H534 L570 445 L615 579 L657 512 H765" fill="none" stroke="#8be6ec" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

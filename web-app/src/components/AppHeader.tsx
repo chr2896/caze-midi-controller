@@ -1,4 +1,7 @@
+import { version } from '../../package.json';
+import { t } from '../i18n';
 import { AppHeaderRoot } from './AppHeader.styles';
+import { LanguageMenu } from './LanguageMenu';
 import { Button } from './ui/Button';
 
 interface Props {
@@ -9,27 +12,31 @@ export function AppHeader({ onOpenFiles, onOpenUsb }: Props) {
   return (
     <AppHeaderRoot>
       <div className="brand">
-        <span className="logo" aria-hidden="true">
-          C
-        </span>
+        <img src="./caze-icon.svg" width="64" height="64" alt="" />
         <h1>
           CAZE MIDI CTRL
           <small>
-            EDITOR <span>2.0</span>
+            EDITOR <span>{version}</span>
           </small>
         </h1>
       </div>
-      <nav aria-label="Ferramentas">
-        <Button onClick={onOpenFiles} title="Importar um preset ou exportar uma cópia em arquivo">
-          Importar / Exportar
+      <nav aria-label={t('Ferramentas')}>
+        <Button
+          onClick={onOpenFiles}
+          title={t('Importar um preset ou exportar uma cópia em arquivo')}
+        >
+          {' '}
+          {t('Importar / Exportar')}{' '}
         </Button>
         <Button
           className="primary"
           onClick={onOpenUsb}
-          title="Conectar por USB, ler configurações e salvar no pedal"
+          title={t('Conectar por USB, ler configurações e salvar no pedal')}
         >
-          Ler / Salvar
+          {' '}
+          {t('Ler / Salvar')}{' '}
         </Button>
+        <LanguageMenu />
       </nav>
     </AppHeaderRoot>
   );

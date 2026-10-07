@@ -1,7 +1,7 @@
 {
   "name": "midi-controller-editor",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.2.0-beta.1",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -9,13 +9,23 @@
     "preview": "vite preview --host 127.0.0.1",
     "test": "tsx --test src/tests/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write src index.html *.json",
-    "format:check": "prettier --check src index.html *.json",
+    "format": "prettier --write src desktop index.html *.json",
+    "format:check": "prettier --check src desktop index.html *.json",
     "check": "npm run typecheck && npm run lint && npm test && npm run format:check",
     "lint": "biome check . --error-on-warnings",
-    "lint:fix": "biome check . --write"
+    "lint:fix": "biome check . --write",
+    "desktop:build": "tsc -p desktop/tsconfig.json && tsc --noEmit && vite build --base=./",
+    "desktop:start": "npm run desktop:build && electron .",
+    "desktop:pack": "npm run desktop:build && electron-builder --dir --publish never",
+    "desktop:win": "npm run desktop:build && electron-builder --win nsis --x64 --publish never",
+    "desktop:mac": "npm run desktop:build && electron-builder --mac dmg zip --publish never",
+    "postinstall": "node node_modules/electron/install.js",
+    "desktop:test": "tsc -p desktop/tsconfig.json && electron desktop-dist/smoke.js",
+    "branding": "node scripts/branding.mjs"
   },
   "dependencies": {
+    "@fontsource/oxanium": "^5.3.0",
+    "@fontsource/rajdhani": "^5.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "styled-components": "^6.5.3"
@@ -26,9 +36,56 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/w3c-web-serial": "^1.0.8",
+    "electron": "^44.6.0",
+    "electron-builder": "^26.15.3",
     "prettier": "^3.9.9",
+    "sharp": "^0.35.5",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^6.0.0"
+  },
+  "main": "desktop-dist/main.js",
+  "description": "Editor desktop CAZE MIDI CTRL",
+  "author": "CAZE MIDI CTRL contributors",
+  "build": {
+    "appId": "com.caze.midictrl",
+    "productName": "CAZE MIDI CTRL",
+    "directories": {
+      "output": "release/desktop"
+    },
+    "files": [
+      "dist/**/*",
+      "desktop-dist/main.js",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerSidebar": "build/installer-sidebar.bmp",
+      "uninstallerSidebar": "build/installer-sidebar.bmp",
+      "installerHeader": "build/installer-header.bmp",
+      "installerLanguages": [
+        "pt_BR",
+        "en_US"
+      ],
+      "language": "1046"
+    },
+    "mac": {
+      "category": "public.app-category.music",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "build/icon.icns"
+    },
+    "publish": null,
+    "electronDist": "node_modules/electron/dist"
   }
 }

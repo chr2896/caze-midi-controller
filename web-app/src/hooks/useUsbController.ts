@@ -15,13 +15,15 @@ function loadRecovery(): RecoveryBundle | null {
     return null;
   }
 }
-export function useUsbController(preset: Preset, onLoad: (preset: Preset) => void) {
+export function useUsbController(
+  preset: Preset,
+  onLoad: (preset: Preset, synced?: boolean) => void,
+  onRead: (preset: Preset | null) => void,
+) {
   const client = useRef<SerialClient | null>(null);
   const [connected, setConnected] = useState(false),
     [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState(
-    'Atualize o firmware e ative USB MODE com FS4 + FS6 antes de conectar.',
-  );
+  const [message, setMessage] = useState('Ative USB MODE com FS4 + FS6 antes de conectar.');
   const [snapshot, setSnapshot] = useState<number[] | null>(null);
   const [canWrite, setCanWrite] = useState(false),
     [recovery, setRecovery] = useState(loadRecovery);
@@ -34,6 +36,7 @@ export function useUsbController(preset: Preset, onLoad: (preset: Preset) => voi
   async function connect() {
     setBusy(true);
     setSnapshot(null);
+    onRead(null);
     setMessage('Selecione a porta do Nano. Aguardando inicialização e identificação…');
     const next = new SerialClient(() => {
       setConnected(false);
@@ -45,6 +48,7 @@ export function useUsbController(preset: Preset, onLoad: (preset: Preset) => voi
       setConnected(true);
       setCanWrite(next.canWrite);
       setMessage('Nano identificado. Clique em Ler controlador para obter a configuração salva.');
+      return true;
     } catch (error) {
       setConnected(false);
       setMessage(
@@ -52,6 +56,7 @@ export function useUsbController(preset: Preset, onLoad: (preset: Preset) => voi
           ? 'Seleção da porta cancelada.'
           : errorMessage(error),
       );
+      return false;
     } finally {
       setBusy(false);
     }
@@ -63,6 +68,12 @@ export function useUsbController(preset: Preset, onLoad: (preset: Preset) => voi
       const bytes = await requireClient().request(2);
       if (bytes.length !== 1024) throw Error('Leitura incompleta. Tente novamente.');
       setSnapshot(bytes);
+      const result = decodeSnapshot(bytes, preset);
+      onRead(
+        result.loaded === 45 && !result.warnings.length && result.state === 'ready'
+          ? result.preset
+          : null,
+      );
       setMessage('Leitura concluída. Seu rascunho ainda não foi alterado.');
     } catch (error) {
       setMessage(errorMessage(error));
@@ -118,7 +129,7 @@ export function useUsbController(preset: Preset, onLoad: (preset: Preset) => voi
         setMessage(`Gravando ${percent}% — mantenha a USB conectada.`),
       );
       setSnapshot(bytes);
-      onLoad(decodeSnapshot(bytes, bundle.preset).preset);
+      onLoad(decodeSnapshot(bytes, bundle.preset).preset, true);
       setMessage(
         'Gravação concluída e conferida pela releitura. Nomes e textos dos estados já estão no Nano.',
       );
@@ -151,7 +162,10 @@ export function useUsbController(preset: Preset, onLoad: (preset: Preset) => voi
   }
   function applyReading() {
     if (!decoded) return;
-    onLoad(decoded.preset);
+    onLoad(
+      decoded.preset,
+      decoded.loaded === 45 && decoded.warnings.length === 0 && decoded.state === 'ready',
+    );
     setMessage('Leitura carregada no editor. Nada foi gravado no Nano.');
   }
   return {

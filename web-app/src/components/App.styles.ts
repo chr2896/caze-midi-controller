@@ -4,6 +4,18 @@ export const AppRoot = styled.main`
     max-width: 1600px;
     margin: auto;
   }
+  & .sync-status {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 16px 24px;
+    color: #9aafb6;
+    font-size: 14px;
+  }
+  & .sync-status .pending {
+    color: #e5b766;
+  }
   & .workspace {
     display: grid;
     grid-template-columns: minmax(0, 1fr);

@@ -2,6 +2,7 @@ import { Fragment, type MouseEvent } from 'react';
 import { externalNames } from '../domain/external-config';
 import { types } from '../domain/preset';
 import type { MidiAction, Preset } from '../domain/types';
+import { t } from '../i18n';
 import { ControllerPreviewRoot } from './ControllerPreview.styles';
 import { Button } from './ui/Button';
 import { Hint } from './ui/Typography';
@@ -40,11 +41,8 @@ export function ControllerPreview({
 }: Props) {
   return (
     <ControllerPreviewRoot>
-      <div className="canvas-heading">
-        <span className="draft-tag">Teste Local</span>
-      </div>
       <div className="toolbar">
-        <nav className="tabs" aria-label="Páginas do controlador">
+        <nav className="tabs" aria-label={t('Páginas do controlador')}>
           {[0, 1].map((p) => (
             <Button
               key={p}
@@ -52,15 +50,16 @@ export function ControllerPreview({
               className={page === p ? 'selected' : ''}
               onClick={() => setPage(p)}
             >
-              Página {p + 1}
+              {' '}
+              {t('Página')} {p + 1}
             </Button>
           ))}
         </nav>
         <Hint as="span" className="hint">
-          {['Clique', 'Clique longo', 'Clique duplo'][gesture]}
+          {t(['Clique', 'Clique longo', 'Clique duplo'][gesture])}
         </Hint>
       </div>
-      <section className="device" aria-label="Prévia do controlador">
+      <section className="device" aria-label={t('Prévia do controlador')}>
         {[
           { id: 'upper', foots: [0, 2, 4] },
           { id: 'lower', foots: [1, 3, 5] },
@@ -97,19 +96,19 @@ export function ControllerPreview({
         ))}
       </section>
       <div className="external-heading">
-        <h3>Foots Externos</h3>
+        <h3>{t('Foots Externos')}</h3>
       </div>
       <div className="foots external-foots">
         {externalNames.map((name, i) => (
           <Button
-            key={name}
+            key={t(name)}
             className={`foot ${editorOpen && foot === i + 6 ? 'chosen' : ''}`}
             aria-pressed={editorOpen && foot === i + 6}
             onClick={(event) => selectFoot(i + 6, event)}
           >
             <strong>FS {i + 7}</strong>
             <span className="switch" />
-            <small>{name}</small>
+            <small>{t(name)}</small>
             <small>
               {externals[i * 3 + gesture].label || types[externals[i * 3 + gesture].type]}
             </small>
@@ -117,9 +116,10 @@ export function ControllerPreview({
         ))}
       </div>
       <details className="expression-tools">
-        <summary>Simular pedal de expressão</summary>
+        <summary>{t('Simular pedal de expressão')}</summary>
         <label className="simulation">
-          Simular expressão{' '}
+          {' '}
+          {t('Simular expressão')}{' '}
           <strong>
             {midi} MIDI · {Math.round((midi * 100) / 127)}%
           </strong>
@@ -132,25 +132,27 @@ export function ControllerPreview({
           />
         </label>
         <label>
-          Modo de expressão na prévia
+          {' '}
+          {t('Modo de expressão na prévia')}{' '}
           <select
             value={expressionMode}
             disabled={!expressionMode}
             onChange={(e) => setExpressionMode(Number(e.target.value))}
           >
-            {!expressionMode && <option value={0}>CC configurado no Nano</option>}
+            {!expressionMode && <option value={0}>{t('CC configurado no Nano')}</option>}
             <option value={1}>EXP · CC1</option>
             <option value={2}>EXP2 · CC2</option>
           </select>
         </label>
         <Hint className="hint">
-          A prévia é uma simulação. Nenhum comando é enviado ao Controlador.
+          {' '}
+          {t('A prévia é uma simulação. Nenhum comando é enviado ao Controlador.')}{' '}
         </Hint>
       </details>
       <p className="canvas-tip">
         {editorOpen
-          ? 'Selecione outro foot para continuar editando.'
-          : 'Selecione um foot para configurar seu comando.'}
+          ? t('Selecione outro foot para continuar editando.')
+          : t('Selecione um foot para configurar seu comando.')}
       </p>
     </ControllerPreviewRoot>
   );

@@ -41,6 +41,8 @@ export const AppHeaderRoot = styled.header`
     color: var(--accent);
   }
   & nav {
+    align-items: center;
+    flex-wrap: wrap;
     display: flex;
     gap: 10px;
   }

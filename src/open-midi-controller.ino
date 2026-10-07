@@ -1,4 +1,4 @@
-#define REVISION "1.1.0"
+#define REVISION "1.2.0-beta.1"
 
 #include <MIDI.h>
 

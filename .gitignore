@@ -16,3 +16,6 @@ dist/
 .vscode/ipch
 
 !tests/firmware/fixtures/*.bin
+
+web-app/desktop-dist/
+web-app/release/

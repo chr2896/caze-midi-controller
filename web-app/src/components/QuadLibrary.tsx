@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { QUAD_MANUAL, quadCommands, quadPatch } from '../domain/quad-library';
 import type { MidiAction } from '../domain/types';
+import { t } from '../i18n';
 import { Modal } from './Modal';
 import { QuadLibraryRoot } from './QuadLibrary.styles';
 import { Button } from './ui/Button';
@@ -24,7 +25,7 @@ export function QuadLibrary({
   const matches = quadCommands.filter(
     (c) =>
       (category === 'Todas' || c.category === category) &&
-      `${c.name} ${c.id} ${c.category}`
+      `${t(c.name)} ${c.id} ${c.category}`
         .toLocaleLowerCase()
         .includes(query.toLocaleLowerCase().trim()),
   );
@@ -32,7 +33,7 @@ export function QuadLibrary({
     const id = `quad-value-${label.replace(/[^a-zA-Z0-9]/g, '-')}`;
     return (
       <label htmlFor={id}>
-        {label}
+        {t(label)}
         {command.options ? (
           <select
             id={id}
@@ -42,7 +43,7 @@ export function QuadLibrary({
           >
             {command.options.map((o) => (
               <option key={o.value} value={o.value}>
-                {o.name} · {o.value}
+                {t(o.name)} · {o.value}
               </option>
             ))}
           </select>
@@ -65,42 +66,50 @@ export function QuadLibrary({
   return (
     <>
       <Button onClick={() => dialog.current?.showModal()}>
-        Biblioteca MIDI · Quad Cortex mini
+        {' '}
+        {t('Biblioteca MIDI · Quad Cortex mini')}{' '}
       </Button>
       <Modal
         dialogRef={dialog}
         id="quad-library-title"
-        title="Biblioteca MIDI · Quad Cortex mini"
-        closeLabel="Fechar biblioteca"
+        title={t('Biblioteca MIDI · Quad Cortex mini')}
+        closeLabel={t('Fechar biblioteca')}
       >
         <QuadLibraryRoot>
           <p>
-            Todos os {quadCommands.length} comandos CC/PC da tabela MIDI da mini · CorOS 4.1.1.{' '}
+            {' '}
+            {t('Todos os')} {quadCommands.length}{' '}
+            {t('comandos CC/PC da tabela MIDI da mini · CorOS 4.1.1.')}{' '}
             <a href={QUAD_MANUAL} target="_blank" rel="noreferrer">
-              Manual oficial ↗
+              {' '}
+              {t('Manual oficial ↗')}{' '}
             </a>
           </p>
           <div className="library-filters">
             <label>
-              Buscar comando
+              {' '}
+              {t('Buscar comando')}{' '}
               <input
                 type="search"
-                placeholder="Nome ou CC (ex.: CC64)"
+                placeholder={t('Nome ou CC (ex.: CC64)')}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
             </label>
             <label>
-              Categoria
+              {' '}
+              {t('Categoria')}{' '}
               <select value={category} onChange={(e) => setCategory(e.target.value)}>
                 {['Todas', ...new Set(quadCommands.map((c) => c.category))].map((c) => (
-                  <option key={c}>{c}</option>
+                  <option key={c} value={c}>
+                    {t(c)}
+                  </option>
                 ))}
               </select>
             </label>
           </div>
           <fieldset className="library-list">
-            <legend>Comandos disponíveis</legend>
+            <legend>{t('Comandos disponíveis')}</legend>
             {matches.map((c) => (
               <Button
                 key={c.id}
@@ -114,37 +123,38 @@ export function QuadLibrary({
                   setError('');
                 }}
               >
-                <span>{c.name}</span>
+                <span>{t(c.name)}</span>
                 <small>{c.cc === undefined ? 'PC' : `CC${c.cc}`}</small>
               </Button>
             ))}
-            {matches.length === 0 && <p>Nenhum comando encontrado.</p>}
+            {matches.length === 0 && <p>{t('Nenhum comando encontrado.')}</p>}
           </fieldset>
-          <section className="library-detail" aria-label="Configurar comando selecionado">
+          <section className="library-detail" aria-label={t('Configurar comando selecionado')}>
             <h3>
-              {command.name} <small>{command.cc === undefined ? 'PC' : `CC${command.cc}`}</small>
+              {t(command.name)} <small>{command.cc === undefined ? 'PC' : `CC${command.cc}`}</small>
             </h3>
-            <p>{command.description}</p>
+            <p>{t(command.description)}</p>
             {command.cc === 64 && (
               <label>
                 <input
                   type="checkbox"
                   checked={syncPages}
                   onChange={(e) => setSyncPages(e.target.checked)}
-                />
-                Sincronizar páginas do controlador e da Quad Cortex
+                />{' '}
+                {t('Sincronizar páginas do controlador e da Quad Cortex')}{' '}
               </label>
             )}
             {command.options && (
               <label>
-                Comportamento
+                {' '}
+                {t('Comportamento')}{' '}
                 <select
                   value={syncPages || toggle ? 'toggle' : 'single'}
                   disabled={syncPages}
                   onChange={(e) => setToggle(e.target.value === 'toggle')}
                 >
-                  <option value="single">Enviar um valor</option>
-                  <option value="toggle">Alternar dois valores</option>
+                  <option value="single">{t('Enviar um valor')}</option>
+                  <option value="toggle">{t('Alternar dois valores')}</option>
                 </select>
               </label>
             )}
@@ -152,19 +162,19 @@ export function QuadLibrary({
               <div className="library-values">
                 {valueField(
                   command.cc === undefined
-                    ? 'Programa (0–127)'
+                    ? t('Programa (0–127)')
                     : syncPages
-                      ? 'Página 1 do controlador'
+                      ? t('Página 1 do controlador')
                       : toggle
-                        ? 'Primeira pisada'
-                        : 'Valor enviado',
+                        ? t('Primeira pisada')
+                        : t('Valor enviado'),
                   syncPages ? 0 : first,
                   setFirst,
                 )}
                 {(syncPages || toggle) &&
                   command.options &&
                   valueField(
-                    syncPages ? 'Página 2 do controlador' : 'Segunda pisada',
+                    syncPages ? t('Página 2 do controlador') : t('Segunda pisada'),
                     syncPages ? 127 : second,
                     setSecond,
                   )}
@@ -172,16 +182,19 @@ export function QuadLibrary({
             )}
             {syncPages && (
               <p>
-                A sincronização usa CC64 com valores fixos: 0 para I/P1 e 127 para II/P2. Cada
-                pisada alterna as duas páginas a partir da página atual do controlador. Desmarque a
-                opção para editar os valores livremente.
+                {' '}
+                {t(
+                  'A sincronização usa CC64 com valores fixos: 0 para I/P1 e 127 para II/P2. Cada pisada alterna as duas páginas a partir da página atual do controlador. Desmarque a opção para editar os valores livremente.',
+                )}{' '}
               </p>
             )}
             <p>
-              Aplica ao foot e gesto selecionados, mantendo o canal MIDI. Os textos poderão ser
-              editados depois. A Quad não devolve o estado para este editor.
+              {' '}
+              {t(
+                'Aplica ao foot e gesto selecionados, mantendo o canal MIDI. Os textos poderão ser editados depois. A Quad não devolve o estado para este editor.',
+              )}{' '}
             </p>
-            {error && <p role="alert">{error}</p>}
+            {error && <p role="alert">{t(error)}</p>}
             <Button
               onClick={() => {
                 if (
@@ -208,7 +221,8 @@ export function QuadLibrary({
                   );
               }}
             >
-              Usar neste foot
+              {' '}
+              {t('Usar neste foot')}{' '}
             </Button>
           </section>
         </QuadLibraryRoot>

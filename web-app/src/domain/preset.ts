@@ -126,3 +126,22 @@ export function commandText(action: MidiAction, active?: number) {
   if ([6, 7].includes(action.type)) return `GO TO PAGE ${action.value1 + 1}`;
   return types[action.type];
 }
+
+// Compare persisted fields, not object key order or omitted empty state labels.
+export function presetSignature(preset: Preset): string {
+  const actions = [...preset.pages.flat(2), ...(preset.externals ?? createGlobalExternals())];
+  return JSON.stringify(
+    actions.map((a) => [
+      a.channel,
+      a.type,
+      a.value1,
+      a.value2,
+      a.value3,
+      a.label,
+      a.state1 || '',
+      a.state2 || '',
+      Boolean(a.toggleOnOff),
+      a.tapTempo ?? null,
+    ]),
+  );
+}

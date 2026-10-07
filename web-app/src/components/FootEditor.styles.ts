@@ -1,5 +1,12 @@
 import styled from 'styled-components';
 export const FootEditorRoot = styled.aside`
+  .foot-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
   & .gestures {
     display: flex;
     gap: 4px;

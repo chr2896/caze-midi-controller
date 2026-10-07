@@ -1,4 +1,5 @@
 import type { ChangeEvent } from 'react';
+import { t } from '../i18n';
 import { Button, FileButton } from './ui/Button';
 
 interface Props {
@@ -10,16 +11,17 @@ interface Props {
 export function PresetFiles({ onImport, onExport, onExportPrevious, notice }: Props) {
   return (
     <>
-      <p>Importe um preset ou exporte seu rascunho para guardar uma cópia.</p>
+      <p>{t('Importe um preset ou exporte seu rascunho para guardar uma cópia.')}</p>
       <div className="files">
         <FileButton>
-          Importar preset
+          {' '}
+          {t('Importar preset')}{' '}
           <input type="file" accept=".json,application/json" onChange={onImport} />
         </FileButton>
-        <Button onClick={onExport}>Exportar preset ↗</Button>
-        <Button onClick={onExportPrevious}>Baixar preset anterior de 3 páginas</Button>
+        <Button onClick={onExport}>{t('Exportar preset ↗')}</Button>
+        <Button onClick={onExportPrevious}>{t('Baixar preset anterior de 3 páginas')}</Button>
       </div>
-      <p role="status">{notice}</p>
+      <p role="status">{t(notice)}</p>
     </>
   );
 }

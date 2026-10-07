@@ -1,5 +1,17 @@
 # Evolução CAZE MIDI CTRL
 
+## v1.2.0-beta.1 — 2026-10-07
+
+- Aplicativo Windows validado pelo usuário; pacote macOS preparado, ainda pendente de validação no Mac.
+- Tela inicial com conexão USB/modo demo e indicador comparado à configuração lida do controlador.
+- Português-BR/English com escolha persistente, ícone próprio e instalador personalizado.
+- EMPTY limpa o nome do gesto; Restaurar foot redefine os três gestos sem afetar outros foots/páginas.
+- Aplicativo Electron com layout React existente e fontes locais para uso offline.
+- Seleção explícita da porta USB; renderer isolado de Node e navegação restrita.
+- Instalador Windows e comandos para gerar DMG/ZIP no Mac.
+- Guia: [aplicativo desktop](docs/DESKTOP.md). Editor e firmware identificados como 1.2.0-beta.1.
+
+
 ## v1.1.0 — 2026-10-07
 
 Versão para Quad Cortex mini, com editor React/TypeScript e styled-components. Requer atualização conjunta do firmware e editor; exporte o preset antes de migrar de três para duas páginas.

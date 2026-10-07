@@ -125,3 +125,7 @@ Os textos internos usam um pool de 603 caracteres compartilhado por nomes/estado
 ### Gestos externos e modos EXP
 
 Agora são **duas páginas internas** e **três gestos globais por foot externo**. Os novos comandos EXP1/EXP2 e CC64 + PÁGINA roteiam a expressão e sincronizam as páginas da Quad mini. [Atualização, migração e uso](docs/GLOBAL-GESTURES-EXP.md).
+
+## Aplicativo Windows — v1.2.0-beta.1
+
+Baixe o instalador na [release v1.2.0-beta.1](https://github.com/chr2896/caze-midi-controller/releases/tag/v1.2.0-beta.1). O aplicativo funciona sem localhost e mantém o editor React, com Português-BR/English e seleção de porta USB. [Guia desktop e macOS](docs/DESKTOP.md). O instalador ainda não possui assinatura digital; a versão macOS será validada separadamente.

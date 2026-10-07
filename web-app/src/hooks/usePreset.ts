@@ -1,6 +1,6 @@
 import { type ChangeEvent, useState } from 'react';
 import { createGlobalExternals } from '../domain/external-config';
-import { createPreset, validatePreset } from '../domain/preset';
+import { createPreset, emptyAction, presetSignature, validatePreset } from '../domain/preset';
 import type { MidiAction, Preset } from '../domain/types';
 import { downloadFile } from '../utils/download';
 import { errorMessage } from '../utils/errors';
@@ -28,6 +28,9 @@ function loadPreset() {
 export function usePreset(page: number, foot: number, gesture: number) {
   const [initial] = useState(loadPreset);
   const [preset, setPreset] = useState(initial.preset);
+  const [syncedPreset, setSyncedPreset] = useState<string | null>(null);
+  const [edited, setEdited] = useState(false);
+  const pendingChanges = syncedPreset !== null ? presetSignature(preset) !== syncedPreset : edited;
   const [notice, setNotice] = useState(initial.notice);
   const external = foot >= 6;
   const externals = preset.externals ?? createGlobalExternals();
@@ -44,6 +47,7 @@ export function usePreset(page: number, foot: number, gesture: number) {
       setNotice(errorMessage(error));
       return false;
     }
+    setEdited(true);
     setPreset(next);
     try {
       localStorage.setItem(storageKey, JSON.stringify(next));
@@ -52,6 +56,23 @@ export function usePreset(page: number, foot: number, gesture: number) {
       setNotice('Não foi possível salvar no navegador. Exporte seu preset.');
     }
     return true;
+  }
+  function resetFoot() {
+    const next = structuredClone(preset);
+    if (external) {
+      next.externals ??= createGlobalExternals();
+      next.externals.splice((foot - 6) * 3, 3, emptyAction(), emptyAction(), emptyAction());
+    } else {
+      next.pages[page][foot] = [emptyAction(), emptyAction(), emptyAction()];
+    }
+    setEdited(true);
+    setPreset(next);
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(next));
+      setNotice('Foot restaurado ao padrão. Salve no controlador para aplicar.');
+    } catch {
+      setNotice('Não foi possível salvar no navegador. Exporte seu preset.');
+    }
   }
   async function importFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -64,6 +85,7 @@ export function usePreset(page: number, foot: number, gesture: number) {
       const next = validatePreset(parsed);
       next.externals ??= structuredClone(externals); // Old presets do not erase the global draft.
       validatePreset(next);
+      setEdited(true);
       setPreset(next);
       try {
         localStorage.setItem(storageKey, JSON.stringify(next));
@@ -95,7 +117,9 @@ export function usePreset(page: number, foot: number, gesture: number) {
       'application/json',
     );
   }
-  function applyUsbPreset(next: Preset) {
+  function applyUsbPreset(next: Preset, synced = false) {
+    setSyncedPreset(synced ? presetSignature(next) : null);
+    setEdited(true);
     setPreset(next);
     try {
       localStorage.setItem(`${storageKey}-before-usb`, JSON.stringify(preset));
@@ -107,10 +131,14 @@ export function usePreset(page: number, foot: number, gesture: number) {
   }
   return {
     preset,
+    pendingChanges,
+    compareReading: (next: Preset | null) => setSyncedPreset(next ? presetSignature(next) : null),
+    synced: syncedPreset !== null && !pendingChanges,
     externals,
     action,
     notice,
     update,
+    resetFoot,
     importFile,
     exportFile,
     exportPrevious,

@@ -10,7 +10,8 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "verbatimModuleSyntax": true,
-    "types": ["vite/client", "w3c-web-serial", "node"]
+    "types": ["vite/client", "w3c-web-serial", "node"],
+    "resolveJsonModule": true
   },
   "include": ["src"]
 }
